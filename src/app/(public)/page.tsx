@@ -1,6 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { siteConfig, treatments, faqs } from '@/config/site'
-import { Calendar, CheckCircle, ArrowRight, Star } from 'lucide-react'
+import { Calendar, CheckCircle, ArrowRight, Star, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -18,28 +19,19 @@ export default function HomePage() {
     telephone: siteConfig.phone,
     address: {
       '@type': 'PostalAddress',
-      streetAddress: siteConfig.address.split(',')[0],
-      addressLocality: siteConfig.address.split(',')[1]?.trim() || '',
-      addressRegion: siteConfig.address.split(',')[2]?.trim()?.split(' ')[0] || '',
-      postalCode: siteConfig.address.split(' ').pop() || '',
+      streetAddress: siteConfig.address,
     },
-    openingHoursSpecification: siteConfig.operatingHours.map(oh => ({
-      '@type': 'OpeningHoursSpecification',
-      dayOfWeek: oh.day.includes(' - ') ? oh.day.split(' - ').join(',') : oh.day,
-      opens: oh.hours === 'Closed' ? '00:00' : '09:00',
-      closes: oh.hours === 'Closed' ? '00:00' : (oh.hours.includes('4:00 PM') ? '16:00' : '19:00'),
-    }))
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col min-h-screen">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {/* 1. Hero Section */}
       <section className="relative bg-blue-50 py-20 sm:py-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="max-w-2xl">
             <h1 className="text-4xl sm:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
               Modern, Pain-Free <br />
@@ -58,19 +50,21 @@ export default function HomePage() {
                 Book Appointment
               </Link>
               <a 
-                href={`tel:${siteConfig.phone}`}
+                href={`tel:${siteConfig.phone.replace(/\s+/g, '')}`}
                 className="inline-flex justify-center items-center rounded-full bg-white px-8 py-3.5 text-base font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
               >
                 Call {siteConfig.phone}
               </a>
             </div>
           </div>
-        </div>
-        {/* Decorative background element */}
-        <div className="absolute right-0 top-0 -translate-y-12 translate-x-1/3 opacity-20 hidden lg:block">
-          <svg width="600" height="600" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <path fill="#2563EB" d="M45.7,-76.4C58.9,-69.1,69.1,-55.5,77,-41.2C84.9,-26.9,90.4,-11.9,89.5,2.7C88.5,17.2,81.1,31.4,72.4,44.2C63.6,57,53.5,68.4,41,75.9C28.4,83.4,14.2,87,1,85.3C-12.2,83.7,-24.4,76.8,-35.8,68.8C-47.3,60.8,-57.9,51.6,-66.2,40.3C-74.6,28.9,-80.7,15.5,-82.7,1.4C-84.7,-12.7,-82.5,-27.5,-75.1,-39.8C-67.6,-52.2,-54.9,-62.1,-41.3,-68.9C-27.7,-75.7,-13.9,-79.4,0.9,-80.8C15.6,-82.1,32.5,-83.7,45.7,-76.4Z" transform="translate(100 100)" />
-          </svg>
+          <div className="relative h-80 sm:h-96 lg:h-full min-h-[400px] w-full rounded-2xl overflow-hidden shadow-2xl">
+            <Image
+              src={siteConfig.dentist.actionPhoto!}
+              alt="Clinical Procedure"
+              fill
+              className="object-cover"
+            />
+          </div>
         </div>
       </section>
 
@@ -100,26 +94,28 @@ export default function HomePage() {
       {/* 3. Treatments Section */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Our Services</h2>
-            <p className="mt-4 text-lg text-gray-600">Comprehensive dental care tailored to your specific needs.</p>
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Treatments & Pricing</h2>
+            <p className="mt-4 text-lg text-gray-600">Transparent pricing for comprehensive dental care.</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {treatments.map(t => (
-              <Link key={t.slug} href={`/treatments/${t.slug}`} className="group bg-white p-6 rounded-2xl shadow-sm ring-1 ring-gray-200 hover:shadow-md hover:ring-blue-600 transition-all">
-                <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{t.name}</h3>
-                <p className="text-gray-600 mb-4">{t.shortDescription}</p>
-                <span className="text-sm font-medium text-blue-600 flex items-center gap-1">
-                  Learn more <ArrowRight className="w-4 h-4" />
-                </span>
-              </Link>
-            ))}
+          <div className="max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-xl ring-1 ring-gray-200">
+            <div className="relative w-full aspect-[2/3] sm:aspect-auto sm:h-[800px]">
+              <Image 
+                src={siteConfig.media.priceList!} 
+                alt="Smile Dental Clinic Price List" 
+                fill 
+                className="object-contain bg-white"
+              />
+            </div>
           </div>
           
-          <div className="mt-12 text-center">
-            <Link href="/treatments" className="inline-flex justify-center items-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">
-              View All Treatments
+          <div className="mt-12 text-center flex justify-center gap-4">
+            <Link 
+              href="/book" 
+              className="inline-flex justify-center items-center rounded-full bg-blue-600 px-8 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+            >
+              <Calendar className="w-5 h-5 mr-2" /> Book Now
             </Link>
           </div>
         </div>
@@ -137,34 +133,68 @@ export default function HomePage() {
               <p className="text-lg leading-relaxed mb-8 opacity-90">
                 "{siteConfig.dentist.bio}"
               </p>
-              <div>
-                <Link href="/about" className="inline-flex justify-center items-center rounded-full bg-white text-blue-600 px-6 py-2.5 text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors">
-                  Read Full Profile
-                </Link>
-              </div>
             </div>
-            {/* Placeholder for Dentist Photo */}
-            <div className="md:w-1/3 bg-blue-800 min-h-[300px] flex items-center justify-center text-blue-300">
-              [Photo Placeholder]
+            <div className="md:w-1/3 relative min-h-[400px]">
+              <Image 
+                src={siteConfig.dentist.portraitPhoto!} 
+                alt={siteConfig.dentist.name}
+                fill
+                className="object-cover object-top"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. FAQ Preview */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Frequently Asked Questions</h2>
-          <div className="space-y-6">
-            {faqs.slice(0, 3).map((faq, i) => (
-              <div key={i} className="bg-white p-6 rounded-2xl shadow-sm ring-1 ring-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{faq.question}</h3>
-                <p className="text-gray-600">{faq.answer}</p>
+      {/* 5. Location & Reviews */}
+      <section className="py-20 bg-gray-50 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">Visit Our Clinic</h2>
+              <div className="flex items-start gap-4 mb-6">
+                <MapPin className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-gray-900">Address</h3>
+                  <p className="text-gray-600 mt-1">{siteConfig.address}</p>
+                </div>
               </div>
-            ))}
-          </div>
-          <div className="mt-8 text-center">
-            <Link href="/faq" className="text-blue-600 font-medium hover:underline">View all FAQs &rarr;</Link>
+              <div className="flex items-start gap-4 mb-8">
+                <Calendar className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-gray-900">Working Hours</h3>
+                  <p className="text-gray-600 mt-1">{siteConfig.operatingHours[0].day}: {siteConfig.operatingHours[0].hours}</p>
+                </div>
+              </div>
+              
+              <div className="bg-white p-6 rounded-2xl shadow-sm ring-1 ring-gray-200">
+                <div className="flex items-center gap-2 mb-4">
+                  {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />)}
+                  <span className="font-bold text-gray-900 ml-2">5.0 on Google</span>
+                </div>
+                <p className="text-gray-600 mb-6 italic">"Excellent service and care. Dr. Rahil is very professional."</p>
+                <a 
+                  href={siteConfig.googleReviewsLink} 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
+                >
+                  Read all Google Reviews
+                </a>
+              </div>
+            </div>
+            
+            <div className="rounded-2xl overflow-hidden shadow-xl ring-1 ring-gray-200 h-[450px] w-full bg-gray-200">
+              <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3690.9245645463925!2d74.7497085!3d13.2845037!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bbcbba33e21b099%3A0xcafb512227026d47!2sSmile%20Dental%20Clinic%20-%20Katapady!5e1!3m2!1sen!2sin!4v1789624673623!5m2!1sen!2sin" 
+                width="100%" 
+                height="100%" 
+                style={{ border: 0 }} 
+                allowFullScreen={true} 
+                loading="lazy" 
+                referrerPolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </div>
           </div>
         </div>
       </section>
