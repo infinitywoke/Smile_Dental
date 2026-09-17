@@ -51,12 +51,12 @@ export function PublicHeader() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Book Button (Desktop + Mobile) */}
+            {/* Book Button (Desktop Only) */}
             <Link 
               href="/book" 
-              className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 sm:px-5 sm:py-2 text-xs sm:text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all"
+              className="hidden md:inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all"
             >
-              <Calendar className="w-4 h-4 mr-2 hidden sm:block" />
+              <Calendar className="w-4 h-4 mr-2" />
               Book Appointment
             </Link>
 
@@ -96,6 +96,17 @@ export function PublicHeader() {
                 {link.name}
               </Link>
             ))}
+            
+            <div className="pt-4 pb-2 mt-2 border-t border-gray-100">
+              <Link 
+                href="/book" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex w-full items-center justify-center rounded-full bg-blue-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all"
+              >
+                <Calendar className="w-5 h-5 mr-2" />
+                Book Appointment
+              </Link>
+            </div>
           </div>
         </div>
       )}
