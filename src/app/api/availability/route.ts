@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+﻿import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -14,10 +14,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Date is required' }, { status: 400 })
     }
 
+    // Convert IST date to UTC bounds
+    const startIST = new Date(`${date}T00:00:00+05:30`).toISOString()
+    const endIST = new Date(`${date}T23:59:59+05:30`).toISOString()
+
     const { data, error } = await supabase
       .from('appointments')
-      .select('appointment_time')
-      .eq('appointment_date', date)
+      .select('scheduled_start')
+      .gte('scheduled_start', startIST)
+      .lte('scheduled_start', endIST)
       .not('status', 'eq', 'cancelled')
 
     if (error) {
@@ -26,8 +31,13 @@ export async function GET(request: Request) {
     }
 
     const bookedSlots = data.map(app => {
-      if (!app.appointment_time) return null;
-      return app.appointment_time.substring(0, 5);
+      if (!app.scheduled_start) return null;
+      // Convert stored UTC to IST time for matching
+      const d = new Date(app.scheduled_start);
+      // Format as HH:mm in IST
+      const localString = d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit' });
+      // localString is usually "09:00" or "24:00" etc, adjust for 24h
+      return localString;
     }).filter(Boolean)
 
     return NextResponse.json({ bookedSlots })
@@ -36,4 +46,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
-

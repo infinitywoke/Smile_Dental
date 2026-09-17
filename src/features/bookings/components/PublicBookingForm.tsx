@@ -109,12 +109,8 @@ export function PublicBookingForm() {
   const handleNext = () => setStep(s => Math.min(s + 1, 4))
   const handleBack = () => setStep(s => Math.max(s - 1, 1))
 
-  const handleSOS = () => {
+  const handleSOS = async () => {
     setIsSOS(true)
-  }
-
-  const handleCloseSOS = async () => {
-    setIsSOS(false)
     setLoading(true)
     setError(null)
     
@@ -169,12 +165,19 @@ export function PublicBookingForm() {
 
       const { time, ampm } = parseTimeForData(foundTime24)
       updateData({ preferred_date: foundDateStr, preferred_time: time, preferred_time_ampm: ampm, reason: 'EMERGENCY' })
-      setStep(4)
       
     } catch (err: any) {
       setError(err.message || "Failed to find an emergency slot. Please call the clinic directly.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleCloseSOS = () => {
+    setIsSOS(false)
+    // Only proceed to step 4 if we actually found a date (no error occurred)
+    if (data.preferred_date && data.preferred_time) {
+      setStep(4)
     }
   }
 
