@@ -49,15 +49,146 @@ export const siteConfig = {
   }
 }
 
-// --- Services ---
-// [PLACEHOLDER] Catalog awaiting clinic owner's actual service list.
-export const treatments = [
+export type Treatment = {
+  slug: string
+  name: string
+  shortDescription: string
+  description?: string
+  isVerified: boolean
+  pricing?: { detail: string; cost: string }[]
+}
+
+export const treatments: Treatment[] = [
   {
-    slug: "placeholder-treatment",
-    name: "[TREATMENT NAME PENDING]",
-    shortDescription: "[TREATMENT SUMMARY PENDING]",
-    description: "[TREATMENT DETAILS PENDING VERIFICATION]",
-    isVerified: false
+    slug: "consultation",
+    name: "Consultation",
+    shortDescription: "Initial dental examination and assessment by the dentist.",
+    isVerified: true,
+    pricing: [
+      { detail: "Standard Consultation", cost: "200/-" }
+    ]
+  },
+  {
+    slug: "x-ray",
+    name: "X-Ray",
+    shortDescription: "Radiographic imaging used to diagnose hidden dental issues.",
+    isVerified: true,
+    pricing: [
+      { detail: "Standard X-Ray", cost: "350/-" }
+    ]
+  },
+  {
+    slug: "scaling-teeth-cleaning",
+    name: "Scaling / Teeth Cleaning / Prophylaxis",
+    shortDescription: "Removal of plaque, tartar, and stains to maintain oral hygiene.",
+    isVerified: true,
+    pricing: [
+      { detail: "Mild case", cost: "400/-" },
+      { detail: "Moderate case", cost: "600/-" },
+      { detail: "Severe case", cost: "800/-" },
+      { detail: "Polishing (Henry Schein)", cost: "300/-" }
+    ]
+  },
+  {
+    slug: "complete-dentures",
+    name: "Complete Dentures",
+    shortDescription: "Full arch removable prosthetics to replace all missing teeth.",
+    isVerified: true,
+    pricing: [
+      { detail: "Complete Denture Basic quality", cost: "7,000/-" },
+      { detail: "Complete Denture AcryRock quality", cost: "9,000/-" },
+      { detail: "Complete Denture Ivoclar quality", cost: "14,000/-" }
+    ]
+  },
+  {
+    slug: "orthodontics",
+    name: "Orthodontics",
+    shortDescription: "Treatments to correct teeth alignment and bite issues.",
+    isVerified: true,
+    pricing: [
+      { detail: "Basic Metal braces", cost: "25,000/-" },
+      { detail: "Premium Metal braces", cost: "30,000/-" },
+      { detail: "Ceramic Braces", cost: "45,000/-" },
+      { detail: "Illusion aligners (based on no. of trays)", cost: "45,000/- to 65,000/-" },
+      { detail: "Invisalign aligners", cost: "1,25,000/-" }
+    ]
+  },
+  {
+    slug: "root-canal-treatment",
+    name: "Root Canal Treatment",
+    shortDescription: "Procedure to repair and save a severely infected or damaged tooth.",
+    isVerified: true,
+    pricing: [
+      { detail: "Standard Treatment", cost: "3,500/-" }
+    ]
+  },
+  {
+    slug: "post-and-core-build-up",
+    name: "Post and Core Build Up",
+    shortDescription: "Restoration performed to anchor a crown on a tooth after a root canal.",
+    isVerified: true,
+    pricing: [
+      { detail: "Standard Build Up", cost: "1,200/-" }
+    ]
+  },
+  {
+    slug: "removable-partial-dentures",
+    name: "Removable Partial Dentures",
+    shortDescription: "Removable replacement for one or more missing teeth.",
+    isVerified: true,
+    pricing: [
+      { detail: "AcryRock Single tooth", cost: "1,200/-" },
+      { detail: "AcryRock additional tooth", cost: "1,200/- + 400/-* number of additional teeth." }
+    ]
+  },
+  {
+    slug: "tooth-extraction",
+    name: "Tooth Extraction",
+    shortDescription: "Removal of a tooth from its socket in the jawbone.",
+    isVerified: true,
+    pricing: [
+      { detail: "Mobile Tooth Extraction", cost: "500/-" },
+      { detail: "Regular Extraction", cost: "700/-" },
+      { detail: "Sectioning Charge", cost: "300/-" },
+      { detail: "Wisdom Tooth/3rd Molar", cost: "800/-" },
+      { detail: "Difficult wisdom tooth", cost: "1,200/-" },
+      { detail: "Suture/Stitch", cost: "300/-" }
+    ]
+  },
+  {
+    slug: "fillings",
+    name: "Fillings",
+    shortDescription: "Restorative materials used to repair decayed or broken teeth.",
+    isVerified: true,
+    pricing: [
+      { detail: "ZOE/Medicated Temporary", cost: "300/-" },
+      { detail: "3M Ketac Molar GIC", cost: "700/-" },
+      { detail: "Wizdent Master Design Composite", cost: "800/-" },
+      { detail: "Dengen Nanotech Composite", cost: "900/-" },
+      { detail: "3M Z350 Composite", cost: "1,200/-" }
+    ]
+  },
+  {
+    slug: "crowns-bridges-ceramic",
+    name: "Crowns & Bridges (Ceramic)",
+    shortDescription: "Custom-fitted tooth-shaped caps for restoring damaged teeth.",
+    isVerified: true,
+    pricing: [
+      { detail: "Vita Ceramic", cost: "3,499/- (Per Crown)" },
+      { detail: "Ivoclar Ceramic", cost: "3,999/- (Per Crown)" },
+      { detail: "DMLS Ivoclar Ceramic", cost: "4,999/- (Per Crown)" }
+    ]
+  },
+  {
+    slug: "crowns-bridges-zirconia",
+    name: "Crowns & Bridges (Zirconia/Emax)",
+    shortDescription: "Highly durable and aesthetically pleasing tooth-shaped caps.",
+    isVerified: true,
+    pricing: [
+      { detail: "Vita Zirconia (5 years warranty)", cost: "6,499/- (Per Crown)" },
+      { detail: "Ivoclar Zirconia (10 years warranty)", cost: "7,499/- (Per Crown)" },
+      { detail: "IPS Emax Lithium Disilicate (10 years warranty, balances Beauty and strength)", cost: "9,999/- (Per Crown)" }
+    ]
   }
 ]
 

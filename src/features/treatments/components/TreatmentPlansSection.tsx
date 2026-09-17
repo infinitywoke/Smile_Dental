@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Check, Play, Trash2, X } from 'lucide-react'
 import { TreatmentPlanWithItems, TreatmentStatus } from '../services/treatmentService'
 import { createTreatmentPlan, createTreatmentItem, updateTreatmentItemStatus, deleteTreatmentItem, updateTreatmentPlanStatus } from '../actions/treatmentActions'
+import { treatments } from '@/config/site'
 
 export function TreatmentPlansSection({ patientId, initialPlans }: { patientId: string, initialPlans: TreatmentPlanWithItems[] }) {
   const [plans, setPlans] = useState<TreatmentPlanWithItems[]>(initialPlans)
@@ -259,12 +260,28 @@ export function TreatmentPlansSection({ patientId, initialPlans }: { patientId: 
 
                 {!isCompleted && addingToPlanId === plan.id && (
                   <li className="p-4 sm:px-6 bg-gray-50">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 items-end">
-                      <div className="sm:col-span-2">
-                        <label className="block text-xs font-medium text-gray-700">Procedure</label>
-                        <input type="text" value={procedure} onChange={e => setProcedure(e.target.value)} className="mt-1 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" placeholder="e.g. RCT" />
-                      </div>
-                      <div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 items-end">
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700">Procedure</label>
+                          <input type="text" list="procedures-list" value={procedure} onChange={e => {
+                            setProcedure(e.target.value)
+                            // Auto-fill cost if a standard procedure is selected
+                            const selectedOption = document.querySelector(`datalist#procedures-list option[value="${e.target.value}"]`) as HTMLOptionElement;
+                            if (selectedOption && selectedOption.dataset.cost) {
+                              setEstimatedCost(selectedOption.dataset.cost.replace(/[^0-9]/g, ''))
+                            }
+                          }} className="mt-1 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" placeholder="e.g. RCT" />
+                          <datalist id="procedures-list">
+                            {treatments.flatMap(t => 
+                              t.pricing ? t.pricing.map(p => (
+                                <option key={`${t.name} - ${p.detail}`} value={`${t.name} - ${p.detail}`} data-cost={p.cost} />
+                              )) : [
+                                <option key={t.name} value={t.name} />
+                              ]
+                            )}
+                          </datalist>
+                        </div>
+                        <div>
                         <label className="block text-xs font-medium text-gray-700">Tooth (Optional)</label>
                         <input type="text" value={toothNumber} onChange={e => setToothNumber(e.target.value)} className="mt-1 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" placeholder="e.g. 46" />
                       </div>
