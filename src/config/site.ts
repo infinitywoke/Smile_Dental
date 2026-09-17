@@ -65,8 +65,23 @@ export const treatments = [
 // [PLACEHOLDER] Awaiting verified clinic FAQs.
 export const faqs = [
   {
-    question: "[FAQ QUESTION PENDING]",
-    answer: "[FAQ ANSWER PENDING VERIFICATION]",
-    isVerified: false
+    question: "Where is Smile Dental Clinic located in Udupi?",
+    answer: "Smile Dental Clinic is conveniently located on the 1st Floor of YM Zohara Building, on Shirva Road, near Vijaya Bank in Yenna Gudde, Katapadi. We proudly serve patients from Katapadi, Udupi, and surrounding areas.",
+    isVerified: true
+  },
+  {
+    question: "Who is the best dentist in Katapadi, Udupi?",
+    answer: "Dr. Rahil Yusuf is a highly rated, 5-star dentist in Katapadi, Udupi, with over 5 years of clinical experience across India and the Middle East. He is known for providing gentle, pain-free, and affordable dental care.",
+    isVerified: true
+  },
+  {
+    question: "What dental treatments do you offer at your Katapadi clinic?",
+    answer: "We offer a complete range of professional dental treatments including teeth cleaning (scaling), orthodontics (metal/ceramic braces and aligners), root canal treatments (RCT), painless tooth extractions, tooth-colored composite fillings, complete dentures, and premium Zirconia crowns.",
+    isVerified: true
+  },
+  {
+    question: "Are you open on Sundays?",
+    answer: "Yes, Smile Dental Clinic in Katapadi is open on Sundays! Our everyday timings are 8:30 AM to 1:00 PM and 2:30 PM to 7:30 PM. We are only closed on Fridays.",
+    isVerified: true
   }
 ]
