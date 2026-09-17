@@ -49,13 +49,12 @@ export default function HomePage() {
       {/* 1. Hero Section */}
       <section className="relative bg-blue-50 py-20 sm:py-32 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="max-w-2xl">
-            <h1 className="text-4xl sm:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
-              Modern, Pain-Free <br />
-              <span className="text-blue-600">Dental Care</span>
+          <div className="max-w-2xl lg:max-w-none">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
+              Your Smile,<br className="hidden sm:block" /> Our Priority.
             </h1>
             <p className="text-lg sm:text-xl text-gray-600 mb-8 leading-relaxed">
-              Experience the highest standard of dental care in a comfortable, relaxing environment. 
+              Experience the highest standard of dental care in a comfortable, relaxing environment.{" "}
               {siteConfig.dentist.name} and our expert team are dedicated to your long-term oral health.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
