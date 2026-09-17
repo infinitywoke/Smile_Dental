@@ -105,11 +105,13 @@ export default function PublicLayout({
           
           <div>
             <h4 className="text-white font-semibold mb-4">Hours</h4>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-4 text-sm">
               {siteConfig.operatingHours.map((h, i) => (
-                <li key={i} className="flex justify-between">
-                  <span>{h.day}</span>
-                  <span>{h.hours}</span>
+                <li key={i} className="flex flex-col gap-1">
+                  <span className="font-semibold text-gray-300">{h.day}</span>
+                  {h.hours.map((time, j) => (
+                    <span key={j} className="text-gray-400">{time}</span>
+                  ))}
                 </li>
               ))}
             </ul>

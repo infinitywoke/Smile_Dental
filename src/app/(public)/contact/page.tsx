@@ -52,11 +52,15 @@ export default function ContactPage() {
             </div>
             <div className="w-full">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Operating Hours</h3>
-              <ul className="space-y-2 text-gray-600">
+              <ul className="space-y-4 text-gray-600">
                 {siteConfig.operatingHours.map((h, i) => (
-                  <li key={i} className="flex justify-between max-w-xs">
-                    <span>{h.day}</span>
-                    <span className="font-medium">{h.hours}</span>
+                  <li key={i} className="flex flex-col sm:flex-row sm:justify-between max-w-xs">
+                    <span className="font-semibold text-gray-900 mb-1 sm:mb-0">{h.day}</span>
+                    <div className="flex flex-col text-right">
+                      {h.hours.map((time, j) => (
+                        <span key={j} className="font-medium text-gray-700">{time}</span>
+                      ))}
+                    </div>
                   </li>
                 ))}
               </ul>

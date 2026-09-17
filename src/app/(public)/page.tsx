@@ -180,7 +180,12 @@ export default function HomePage() {
                 <Calendar className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="font-semibold text-gray-900">Working Hours</h3>
-                  <p className="text-gray-600 mt-1">{siteConfig.operatingHours[0].day}: {siteConfig.operatingHours[0].hours}</p>
+                  <div className="mt-1">
+                    <p className="font-medium text-gray-900">{siteConfig.operatingHours[0].day}:</p>
+                    {siteConfig.operatingHours[0].hours.map((time, idx) => (
+                      <p key={idx} className="text-gray-600">{time}</p>
+                    ))}
+                  </div>
                 </div>
               </div>
               

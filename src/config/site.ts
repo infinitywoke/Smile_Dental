@@ -23,7 +23,7 @@ export const siteConfig = {
   googlePhotosLink: "https://maps.app.goo.gl/b8YHvgUQt4hPuCQL6", // [VERIFIED]
   
   operatingHours: [
-    { day: "Everyday (Fridays Off)", hours: "8:30 AM - 1:00 PM, 2:30 PM - 7:30 PM" }, // [VERIFIED]
+    { day: "Everyday (Fridays Off)", hours: ["8:30 AM - 1:00 PM", "2:30 PM - 7:30 PM"] }, // [VERIFIED]
   ],
   
   socials: {
