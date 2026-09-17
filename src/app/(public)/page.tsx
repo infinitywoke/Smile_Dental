@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { siteConfig, treatments, faqs } from '@/config/site'
 import { Calendar, CheckCircle, ArrowRight, Star, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
+import { TreatmentsCarousel } from '@/features/treatments/components/TreatmentsCarousel'
 
 export const metadata: Metadata = {
   title: `${siteConfig.name} - Trusted Local Dental Care`,
@@ -108,38 +109,14 @@ export default function HomePage() {
       </section>
 
       {/* 3. Treatments Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-gray-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Treatments & Pricing</h2>
-            <p className="mt-4 text-lg text-gray-600">Transparent pricing for comprehensive dental care.</p>
+            <p className="mt-4 text-lg text-gray-600">Comprehensive dental care tailored to your needs.</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {treatments.map((t) => (
-              <div key={t.slug} className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-200 p-6 hover:shadow-md transition-all flex flex-col">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{t.name}</h3>
-                <p className="text-sm text-gray-600 mb-6 flex-1">{t.shortDescription}</p>
-                
-                {t.pricing && t.pricing.length > 0 && (
-                  <div className="mt-auto space-y-3">
-                    <div className="border-t border-gray-100 pt-4">
-                      {t.pricing.map((p, idx) => (
-                        <div key={idx} className="flex justify-between items-start text-sm py-1">
-                          <span className="text-gray-700 pr-4">{p.detail}</span>
-                          <span className="font-semibold text-gray-900 whitespace-nowrap">₹{p.cost.replace('/-', '')}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <Link href={`/treatments/${t.slug}`} className="mt-6 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700">
-                  Learn more <ArrowRight className="ml-1 w-4 h-4" />
-                </Link>
-              </div>
-            ))}
-          </div>
+          <TreatmentsCarousel treatments={treatments} />
           
           <div className="mt-12 text-center flex justify-center gap-4">
             <Link 
