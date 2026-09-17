@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Patients', href: '/dashboard/patients', icon: Users },
   { name: 'Booking Requests', href: '/dashboard/requests', icon: Inbox },
   { name: 'Appointments', href: '/dashboard/appointments', icon: Calendar },
   { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
-  { name: 'Patients', href: '/dashboard/patients', icon: Users },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Treatment Plans', href: '/dashboard/treatments', icon: ClipboardList },
   { name: 'Historical Data', href: '/dashboard/migration', icon: Database },
