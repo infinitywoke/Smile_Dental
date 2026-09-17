@@ -91,6 +91,28 @@ export default async function PatientProfilePage({ params }: { params: Promise<{
             </Link>
           </div>
         </div>
+
+        {/* SMART QUICK ACTIONS */}
+        <div className="mt-6 flex flex-col sm:flex-row flex-wrap gap-3">
+          <Link
+            href={`/dashboard/appointments/new?patientId=${patient.id}`}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-md bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-inset ring-blue-600/20 hover:bg-blue-100"
+          >
+            <Calendar className="h-4 w-4" /> Book Appointment
+          </Link>
+          <Link
+            href={`/dashboard/appointments/new?patientId=${patient.id}&source=WALK_IN`}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-md bg-green-50 px-4 py-2.5 text-sm font-semibold text-green-700 shadow-sm ring-1 ring-inset ring-green-600/20 hover:bg-green-100"
+          >
+            <Activity className="h-4 w-4" /> Start Consultation (Walk-In)
+          </Link>
+          <a
+            href="#clinical-history"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          >
+            <FileText className="h-4 w-4" /> View History
+          </a>
+        </div>
         
         <div className="mt-6 border-t border-gray-100 pt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -159,7 +181,7 @@ export default async function PatientProfilePage({ params }: { params: Promise<{
         </section>
 
         {/* CLINICAL HISTORY */}
-        <section className="space-y-4">
+        <section id="clinical-history" className="space-y-4">
           <h2 className="text-lg font-medium leading-6 text-gray-900 flex items-center gap-2">
             <Activity className="h-5 w-5 text-blue-500" /> Clinical History
           </h2>

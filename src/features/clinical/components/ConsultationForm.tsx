@@ -47,10 +47,24 @@ export default function ConsultationForm({ appointment, existingRecord }: Props)
   const handleComplete = async () => {
     if (!confirm('Are you sure you want to complete this appointment?')) return
     
+    const form = document.getElementById('consultation-form') as HTMLFormElement
+    const formData = new FormData(form)
+    formData.append('teeth', JSON.stringify(teeth))
+    
     startTransition(async () => {
+      // Save form data first
+      const saveResult = await saveConsultationAction(formData)
+      if (saveResult.error) {
+        setError(saveResult.error)
+        return
+      }
+      
+      // Then complete the visit
       const result = await completeVisitAction(appointment.id)
       if (result?.error) {
         setError(result.error)
+      } else {
+        router.refresh()
       }
     })
   }
@@ -86,7 +100,7 @@ export default function ConsultationForm({ appointment, existingRecord }: Props)
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col space-y-6">
+      <form id="consultation-form" onSubmit={handleSubmit} className="flex-1 flex flex-col space-y-6">
         <input type="hidden" name="appointment_id" value={appointment.id} />
 
         <div className="space-y-4 flex-1">
@@ -200,11 +214,11 @@ export default function ConsultationForm({ appointment, existingRecord }: Props)
           </div>
         </div>
 
-        <div className="pt-4 flex gap-4 border-t">
+        <div className="pt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 border-t">
           <button
             type="button"
             onClick={() => window.history.back()}
-            className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            className="w-full sm:w-auto rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
             {isCompleted ? 'Go Back' : 'Cancel'}
           </button>
@@ -213,7 +227,7 @@ export default function ConsultationForm({ appointment, existingRecord }: Props)
               <button
                 type="submit"
                 disabled={isPending}
-                className="flex-1 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
+                className="w-full sm:flex-1 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
               >
                 {isPending ? 'Saving...' : 'Save Consultation'}
               </button>
@@ -223,14 +237,14 @@ export default function ConsultationForm({ appointment, existingRecord }: Props)
                 onClick={handleComplete}
                 disabled={isPending || !existingRecord}
                 title={!existingRecord ? "Save consultation first" : "Complete appointment"}
-                className="flex-1 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-50"
+                className="w-full sm:flex-1 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-50"
               >
                 Complete Visit
               </button>
             </>
           )}
           {isCompleted && (
-            <div className="flex-1 text-center text-sm text-gray-500 py-2">
+            <div className="w-full sm:flex-1 text-center text-sm text-gray-500 py-2">
               This appointment is completed and the clinical record is locked.
             </div>
           )}
