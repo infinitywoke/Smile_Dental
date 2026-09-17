@@ -235,12 +235,6 @@ export function PublicBookingForm() {
         <p className="text-gray-600 mb-8">
           Thank you, {data.name}. Our team will review your request and contact you at {data.phone} to confirm your appointment time.
         </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="inline-flex justify-center w-full rounded-lg bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
-        >
-          Book Another Appointment
-        </button>
       </div>
     )
   }
