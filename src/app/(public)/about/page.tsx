@@ -24,7 +24,7 @@ export default function AboutPage() {
 
         <h2 className="text-3xl font-bold text-gray-900 mt-16 mb-8">Meet {siteConfig.dentist.name}</h2>
         
-        <div className="flex flex-col md:flex-row gap-10 items-start">
+        <div className="flex flex-col md:flex-row gap-10 items-start mb-10">
           <div className="w-full md:w-1/3 shrink-0">
             <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden shadow-lg ring-1 ring-gray-200">
               <Image 
@@ -54,12 +54,22 @@ export default function AboutPage() {
             <p className="leading-relaxed">
               A firm believer in continuous education, {siteConfig.dentist.name} actively pursues the latest advancements in dental science to ensure you receive the highest standard of care. He helps you achieve a healthy, natural-looking smile you can truly be proud of.
             </p>
-            
-            <div className="pt-4">
-              <p className="text-xl font-semibold text-blue-900 border-l-4 border-blue-600 pl-4 py-2 bg-blue-50/50 rounded-r-lg">
-                "We put your comfort, trust, and smile at the absolute heart of our care."
-              </p>
-            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-6 bg-gradient-to-r from-blue-50 to-white p-6 sm:p-8 rounded-2xl border border-blue-100 shadow-sm">
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-full overflow-hidden shadow-md bg-white ring-4 ring-white">
+            <Image 
+              src={siteConfig.media.logo!}
+              alt={`${siteConfig.name} Logo`}
+              fill
+              className="object-contain p-1"
+            />
+          </div>
+          <div className="flex-1 text-center sm:text-left">
+            <p className="text-xl sm:text-2xl font-semibold text-blue-900 italic leading-relaxed">
+              "We put your comfort, trust, and smile at the absolute heart of our care."
+            </p>
           </div>
         </div>
       </div>
