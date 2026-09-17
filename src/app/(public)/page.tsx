@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { siteConfig, treatments, faqs } from '@/config/site'
-import { Calendar, CheckCircle, ArrowRight, Star, MapPin } from 'lucide-react'
+import { Calendar, CheckCircle, ArrowRight, Star, MapPin, Phone } from 'lucide-react'
 import type { Metadata } from 'next'
 import { TreatmentsCarousel } from '@/features/treatments/components/TreatmentsCarousel'
 
@@ -58,19 +58,29 @@ export default function HomePage() {
               Experience the highest standard of dental care in a comfortable, relaxing environment.{" "}
               {siteConfig.dentist.name} and our expert team are dedicated to your long-term oral health.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
               <Link 
                 href="/book" 
                 className="inline-flex justify-center items-center rounded-full bg-blue-600 px-8 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
               >
                 <Calendar className="w-5 h-5 mr-2" />
-                Book Appointment
+                Schedule Consultation
               </Link>
               <a 
                 href={`tel:${siteConfig.phone.replace(/\s+/g, '')}`}
                 className="inline-flex justify-center items-center rounded-full bg-white px-8 py-3.5 text-base font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
               >
-                Call {siteConfig.phone}
+                <Phone className="w-5 h-5 mr-2 text-gray-500" />
+                Call the Clinic
+              </a>
+              <a 
+                href={siteConfig.googleReviewsLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex justify-center items-center rounded-full bg-white px-8 py-3.5 text-base font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
+              >
+                <MapPin className="w-5 h-5 mr-2 text-gray-500" />
+                Navigate to Clinic
               </a>
             </div>
           </div>
