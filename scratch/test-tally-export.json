@@ -1,0 +1,34 @@
+[
+  {
+    "id": "TALLY-1001",
+    "date": "2023-01-15",
+    "ledger_name": "Rahul Kumar",
+    "narration": "Consultation and RCT 16",
+    "amount": 2500,
+    "payment_mode": "UPI"
+  },
+  {
+    "id": "TALLY-1002",
+    "date": "2023-01-16",
+    "ledger_name": "Priya Singh - 9876543210",
+    "narration": "Extraction 24",
+    "amount": 1000,
+    "payment_mode": "CASH"
+  },
+  {
+    "id": "TALLY-1003",
+    "date": "2023-01-16",
+    "ledger_name": "Unknown Walkin",
+    "narration": "Age 42. Routine checkup.",
+    "amount": 500,
+    "payment_mode": "CARD"
+  },
+  {
+    "id": "TALLY-1004",
+    "date": "2023-01-17",
+    "ledger_name": "Ashwin - 8888888888",
+    "narration": "Filling 12",
+    "amount": 800,
+    "payment_mode": "UPI"
+  }
+]
