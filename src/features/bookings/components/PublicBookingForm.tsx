@@ -40,6 +40,13 @@ function parseTimeForData(time24: string): { time: string, ampm: 'AM' | 'PM' } {
   return { time, ampm }
 }
 
+function getLocalDateString(d: Date = new Date()): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function PublicBookingForm() {
   const [step, setStep] = useState<number>(1)
   const [success, setSuccess] = useState(false)
@@ -106,15 +113,69 @@ export function PublicBookingForm() {
     setIsSOS(true)
   }
 
-  const handleCloseSOS = () => {
+  const handleCloseSOS = async () => {
     setIsSOS(false)
-    const d = new Date()
-    while (d.getDay() === 5) {
-      d.setDate(d.getDate() + 1)
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const allSlots = [...MORNING_SLOTS, ...AFTERNOON_SLOTS]
+      const now = new Date()
+      let checkDate = new Date()
+      let foundDateStr = ''
+      let foundTime24 = ''
+
+      // Look up to 7 days ahead for the earliest available slot
+      for (let i = 0; i < 7; i++) {
+        // Skip Fridays
+        if (checkDate.getDay() === 5) {
+          checkDate.setDate(checkDate.getDate() + 1)
+          continue
+        }
+        
+        const dateStr = getLocalDateString(checkDate)
+        const isToday = dateStr === getLocalDateString(now)
+        
+        const res = await fetch(`/api/availability?date=${dateStr}`)
+        if (!res.ok) throw new Error('Failed to fetch availability')
+        const json = await res.json()
+        const bookedForDate = json.bookedSlots || []
+
+        for (const time24 of allSlots) {
+          if (bookedForDate.includes(time24)) continue;
+          
+          if (isToday) {
+            const [h, m] = time24.split(':').map(Number)
+            const currentHour = now.getHours()
+            const currentMinute = now.getMinutes()
+            if (h < currentHour || (h === currentHour && m <= currentMinute)) {
+              continue // Slot has passed today
+            }
+          }
+          
+          // Found earliest available slot!
+          foundDateStr = dateStr
+          foundTime24 = time24
+          break
+        }
+        
+        if (foundDateStr) break;
+        checkDate.setDate(checkDate.getDate() + 1)
+      }
+      
+      if (!foundDateStr) {
+        throw new Error("No available slots found in the next 7 days. Please call the clinic directly.")
+      }
+
+      const { time, ampm } = parseTimeForData(foundTime24)
+      updateData({ preferred_date: foundDateStr, preferred_time: time, preferred_time_ampm: ampm, reason: 'EMERGENCY' })
+      setStep(4)
+      
+    } catch (err: any) {
+      setError(err.message || "Failed to find an emergency slot. Please call the clinic directly.")
+    } finally {
+      setLoading(false)
     }
-    const ds = d.toISOString().split('T')[0]
-    updateData({ preferred_date: ds, preferred_time: '08:30', preferred_time_ampm: 'AM', reason: 'EMERGENCY' })
-    setStep(4)
   }
 
   const handleSlotSelect = (time24: string) => {
@@ -188,7 +249,7 @@ export function PublicBookingForm() {
   
   const isPast = (time24: string) => {
     if (!data.preferred_date) return false;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     const isToday = data.preferred_date === todayStr;
     if (!isToday) return false;
     const now = new Date();
@@ -399,7 +460,7 @@ export function PublicBookingForm() {
                   type="date"
                   value={data.preferred_date}
                   onChange={(e) => updateData({ preferred_date: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={getLocalDateString()}
                   className="pl-11 block w-full rounded-lg border-gray-300 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
