@@ -64,11 +64,16 @@ export default function ContactPage() {
           </div>
         </div>
         
-        <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 flex items-center justify-center min-h-[400px]">
-          <div className="text-center text-gray-500">
-            [Map Placeholder] <br/>
-            Google Maps iframe can be inserted here when verified address is available.
-          </div>
+        <div className="rounded-2xl overflow-hidden shadow-xl ring-1 ring-gray-200 min-h-[400px] w-full bg-gray-200">
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3690.9245645463925!2d74.7497085!3d13.2845037!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bbcbba33e21b099%3A0xcafb512227026d47!2sSmile%20Dental%20Clinic%20-%20Katapady!5e1!3m2!1sen!2sin!4v1789624673623!5m2!1sen!2sin" 
+            width="100%" 
+            height="100%" 
+            style={{ border: 0 }} 
+            allowFullScreen={true} 
+            loading="lazy" 
+            referrerPolicy="no-referrer-when-downgrade"
+          ></iframe>
         </div>
       </div>
     </div>
