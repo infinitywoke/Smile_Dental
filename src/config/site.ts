@@ -17,7 +17,7 @@ export const siteConfig = {
   phone: "+91 6361816711", // [VERIFIED]
   whatsapp: "+91 6361816711", // [VERIFIED]
   email: "smiledental8925@gmail.com", // [VERIFIED]
-  address: "1st Floor, YM, Zohara Building, Shirva Rd, near Bank of Baroda, Yenna Gudde, Katapadi - 574105", // [VERIFIED]
+  address: "1st Floor, YM Zohara Building, Shirva Rd, near Bank of Baroda (formerly Vijaya Bank), Yenna Gudde, Katapadi - 574105", // [VERIFIED]
   mapEmbedLink: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3690.9245645463925!2d74.7497085!3d13.2845037!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bbcbba33e21b099%3A0xcafb512227026d47!2sSmile%20Dental%20Clinic%20-%20Katapady!5e1!3m2!1sen!2sin!4v1789624673623!5m2!1sen!2sin", // [VERIFIED]
   googleReviewsLink: "https://maps.app.goo.gl/b8YHvgUQt4hPuCQL6", // [VERIFIED]
   googlePhotosLink: "https://maps.app.goo.gl/b8YHvgUQt4hPuCQL6", // [VERIFIED]
@@ -66,7 +66,7 @@ export const treatments = [
 export const faqs = [
   {
     question: "Where is Smile Dental Clinic located in Udupi?",
-    answer: "Smile Dental Clinic is conveniently located on the 1st Floor of YM Zohara Building, on Shirva Road, near Bank of Baroda Moodabettu Branch in Yenna Gudde on Shirva Road, Katapadi. We proudly serve patients from Katapadi, Udupi, Kapu, Shirva and surrounding areas.",
+    answer: "Smile Dental Clinic is conveniently located on the 1st Floor of YM Zohara Building, on Shirva Road, near the Bank of Baroda Moodabettu Branch in Yenna Gudde, Katapadi. We proudly serve patients from Katapadi, Udupi, Kapu, Shirva, and surrounding areas.",
     isVerified: true
   },
   {
