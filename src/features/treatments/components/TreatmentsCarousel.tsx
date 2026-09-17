@@ -93,9 +93,9 @@ export function TreatmentsCarousel({ treatments }: TreatmentsCarouselProps) {
             <p className="text-sm text-gray-600 mb-8 flex-1 leading-relaxed line-clamp-3">{t.shortDescription}</p>
             
             <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">Starting from</span>
+              <div className="flex items-baseline gap-1.5">
                 <span className="text-base font-bold text-gray-900">{startingPrice || 'Consultation'}</span>
+                {startingPrice && <span className="text-xs text-gray-500 font-medium tracking-wide">Onwards</span>}
               </div>
               <Link 
                 href={'/treatments/' + t.slug} 
