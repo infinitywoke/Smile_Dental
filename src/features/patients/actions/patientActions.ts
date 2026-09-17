@@ -49,7 +49,7 @@ export async function createPatient(formData: FormData) {
   }
 
   revalidatePath('/dashboard/patients')
-  redirect(`/dashboard/patients/${patient.id}`)
+  redirect(`/dashboard/appointments/new?patientId=${patient.id}&source=WALK_IN`)
 }
 
 export async function updatePatient(id: string, formData: FormData) {

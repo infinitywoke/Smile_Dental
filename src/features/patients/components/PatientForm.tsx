@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createPatient, updatePatient } from '@/features/patients/actions/patientActions'
 
 import { PatientProfile } from '@/lib/types/database.types'
@@ -15,8 +15,11 @@ export function PatientForm({
   const [error, setError] = useState<string | null>(null)
   const [requiresForce, setRequiresForce] = useState(false)
   const [isPending, setIsPending] = useState(false)
+  const isSubmittingRef = useRef(false)
 
   async function handleSubmit(formData: FormData) {
+    if (isSubmittingRef.current) return
+    isSubmittingRef.current = true
     setIsPending(true)
     setError(null)
 
@@ -47,6 +50,7 @@ export function PatientForm({
         setRequiresForce(true)
       }
       setIsPending(false)
+      isSubmittingRef.current = false
       return
     }
 

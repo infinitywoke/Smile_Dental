@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createAppointment, updateAppointment } from '@/features/appointments/actions/appointmentActions'
 import { format, parseISO } from 'date-fns'
 import Link from 'next/link'
@@ -17,6 +17,7 @@ export function AppointmentForm({
 }) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
+  const isSubmittingRef = useRef(false)
 
   // Default to today if no initial data
   const defaultDate = initialData?.scheduled_start 
@@ -32,6 +33,8 @@ export function AppointmentForm({
     : '10:00'
 
   async function handleSubmit(formData: FormData) {
+    if (isSubmittingRef.current) return
+    isSubmittingRef.current = true
     setIsPending(true)
     setError(null)
 
@@ -45,6 +48,7 @@ export function AppointmentForm({
     if (result?.error) {
       setError(result.error)
       setIsPending(false)
+      isSubmittingRef.current = false
     }
   }
 

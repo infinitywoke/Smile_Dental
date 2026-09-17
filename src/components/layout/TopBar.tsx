@@ -13,7 +13,7 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
       </button>
 
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-        <form className="relative flex flex-1" action="#" method="GET">
+        <form className="relative flex flex-1" action="/dashboard/patients" method="GET">
           <label htmlFor="search-field" className="sr-only">
             Search patients
           </label>
@@ -26,8 +26,7 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
             className="block h-full w-full border-0 py-0 pl-8 pr-0 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm"
             placeholder="Search patients by name or phone..."
             type="search"
-            name="search"
-            disabled
+            name="q"
           />
         </form>
         <div className="flex items-center gap-x-4 lg:gap-x-6">
