@@ -54,8 +54,8 @@ export async function GET(request: Request) {
   patients.forEach((p: any) => {
     const row = [
       p.id,
-      " + (p.name || '').replace(/"/g, '""') + ",
-      " + (p.phone || '') + ",
+      `"${(p.name || '').replace(/"/g, '""')}"`,
+      `"${p.phone || ''}"`,
       p.date_of_birth || '',
       p.created_at || ''
     ]
