@@ -85,19 +85,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. Treatments Section (Moved Higher) */}
-      <section className="pt-12 pb-20 bg-white overflow-hidden border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <p className="text-xl md:text-2xl font-medium text-gray-800">Comprehensive dental care tailored to your needs.</p>
-          </div>
-          
-          <TreatmentsCarousel treatments={treatments} />
-        </div>
-      </section>
-
-      {/* 3. Key Trust / Value Prop */}
-      <section className="py-16 bg-gray-50 border-b border-gray-100">
+      {/* 2. Key Trust / Value Prop */}
+      <section className="py-16 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
@@ -116,6 +105,17 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* 3. Treatments Section */}
+      <section className="pt-16 pb-20 bg-gray-50 overflow-hidden border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 text-center sm:text-left">
+            <p className="text-xl md:text-2xl font-medium text-gray-800">Comprehensive dental care tailored to your needs.</p>
+          </div>
+          
+          <TreatmentsCarousel treatments={treatments} />
         </div>
       </section>
 

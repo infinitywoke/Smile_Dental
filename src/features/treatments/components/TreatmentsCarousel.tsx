@@ -109,8 +109,8 @@ export function TreatmentsCarousel({ treatments }: TreatmentsCarouselProps) {
       </div>
       
       {/* Edge Gradients for visual cue */}
-      <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none" />
-      <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+      <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-gray-50 to-transparent pointer-events-none" />
+      <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none" />
     </div>
   )
 }
