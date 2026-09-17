@@ -15,7 +15,6 @@ export function PublicHeader() {
     { name: 'Treatments', href: '/treatments' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
-    { name: 'FAQ', href: '/faq' },
   ]
 
   return (
