@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useRef } from 'react'
 import Link from 'next/link'
@@ -33,6 +33,25 @@ export function TreatmentsCarousel({ treatments }: TreatmentsCarouselProps) {
     return 0
   })
 
+  // Helper to extract the minimum price
+  const getStartingPrice = (pricing?: { detail: string; cost: string }[]) => {
+    if (!pricing || pricing.length === 0) return null;
+    let minPrice = Infinity;
+    let minStr = '';
+    pricing.forEach(p => {
+      // Find the first sequence of digits, optionally with commas
+      const match = p.cost.match(/[\d,]+/);
+      if (match) {
+        const num = parseInt(match[0].replace(/,/g, ''), 10);
+        if (num < minPrice) {
+          minPrice = num;
+          minStr = match[0];
+        }
+      }
+    });
+    return minStr ? `₹${minStr}` : null;
+  }
+
   return (
     <div className="relative group max-w-full">
       {/* Scroll Buttons - Hidden on touch, visible on hover for desktop */}
@@ -57,7 +76,9 @@ export function TreatmentsCarousel({ treatments }: TreatmentsCarouselProps) {
         ref={scrollRef}
         className="flex gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory pb-8 pt-4 px-2 -mx-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       >
-        {sortedTreatments.map((t) => (
+        {sortedTreatments.map((t) => {
+          const startingPrice = getStartingPrice(t.pricing);
+          return (
           <div 
             key={t.slug} 
             className="snap-start shrink-0 w-[85vw] sm:w-[320px] md:w-[350px] bg-white rounded-2xl shadow-sm ring-1 ring-gray-200/60 p-6 hover:shadow-xl transition-all duration-300 flex flex-col group/card relative hover:-translate-y-1"
@@ -71,19 +92,25 @@ export function TreatmentsCarousel({ treatments }: TreatmentsCarouselProps) {
             <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover/card:text-blue-600 transition-colors line-clamp-2">{t.name}</h3>
             <p className="text-sm text-gray-600 mb-8 flex-1 leading-relaxed line-clamp-3">{t.shortDescription}</p>
             
-            <Link 
-              href={/treatments/ + t.slug} 
-              className="mt-auto inline-flex items-center text-sm font-semibold text-blue-600 before:absolute before:inset-0"
-            >
-              View details <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover/card:translate-x-1" />
-            </Link>
+            <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">Starting from</span>
+                <span className="text-base font-bold text-gray-900">{startingPrice || 'Consultation'}</span>
+              </div>
+              <Link 
+                href={'/treatments/' + t.slug} 
+                className="inline-flex items-center text-sm font-semibold text-blue-600 before:absolute before:inset-0"
+              >
+                View <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover/card:translate-x-1" />
+              </Link>
+            </div>
           </div>
-        ))}
+        )})}
       </div>
       
       {/* Edge Gradients for visual cue */}
-      <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-gray-50 to-transparent pointer-events-none" />
-      <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none" />
+      <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none" />
+      <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none" />
     </div>
   )
 }

@@ -85,8 +85,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. Key Trust / Value Prop */}
-      <section className="py-16 bg-white border-b border-gray-100">
+      {/* 2. Treatments Section (Moved Higher) */}
+      <section className="pt-12 pb-20 bg-white overflow-hidden border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <p className="text-xl md:text-2xl font-medium text-gray-800">Comprehensive dental care tailored to your needs.</p>
+          </div>
+          
+          <TreatmentsCarousel treatments={treatments} />
+        </div>
+      </section>
+
+      {/* 3. Key Trust / Value Prop */}
+      <section className="py-16 bg-gray-50 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
@@ -95,36 +106,15 @@ export default function HomePage() {
               { title: "Transparent Pricing", desc: "Clear treatment plans with no hidden costs or surprises." }
             ].map((feature, i) => (
               <div key={i} className="flex gap-4">
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 mt-1">
                   <CheckCircle className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{feature.title}</h3>
-                  <p className="mt-2 text-sm text-gray-600">{feature.desc}</p>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">{feature.desc}</p>
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Treatments Section */}
-      <section className="py-20 bg-gray-50 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Treatments & Pricing</h2>
-            <p className="mt-4 text-lg text-gray-600">Comprehensive dental care tailored to your needs.</p>
-          </div>
-          
-          <TreatmentsCarousel treatments={treatments} />
-          
-          <div className="mt-12 text-center flex justify-center gap-4">
-            <Link 
-              href="/book" 
-              className="inline-flex justify-center items-center rounded-full bg-blue-600 px-8 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
-            >
-              <Calendar className="w-5 h-5 mr-2" /> Book Now
-            </Link>
           </div>
         </div>
       </section>
