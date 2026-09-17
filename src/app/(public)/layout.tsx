@@ -26,8 +26,8 @@ export default function PublicLayout({
       <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2 sm:gap-3">
-              <div className="relative h-10 w-10 sm:w-12 flex-shrink-0">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0 z-10">
+              <div className="relative h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
                 <Image 
                   src={siteConfig.media.logo} 
                   alt={siteConfig.name} 
@@ -36,7 +36,7 @@ export default function PublicLayout({
                   priority
                 />
               </div>
-              <span className="font-bold text-lg sm:text-xl md:text-2xl text-blue-600 tracking-tight whitespace-nowrap">
+              <span className="font-bold text-base sm:text-lg md:text-xl text-blue-700 tracking-tight truncate">
                 {siteConfig.name}
               </span>
             </Link>
