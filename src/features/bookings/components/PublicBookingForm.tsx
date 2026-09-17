@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { submitBookingForm } from '@/features/bookings/actions/bookingActions'
@@ -185,6 +185,19 @@ export function PublicBookingForm() {
   }
 
   const isFriday = data.preferred_date ? new Date(data.preferred_date).getDay() === 5 : false
+  
+  const isPast = (time24: string) => {
+    if (!data.preferred_date) return false;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isToday = data.preferred_date === todayStr;
+    if (!isToday) return false;
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const [h, m] = time24.split(':').map(Number);
+    return h < currentHour || (h === currentHour && m <= currentMinute);
+  };
+
   const selectedTime24 = (() => {
     if (!data.preferred_time) return null
     let [h, m] = data.preferred_time.split(':')
@@ -251,27 +264,31 @@ export function PublicBookingForm() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Locality/ Neighborhood/ Area</label>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Locality / Area</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <MapPin className="h-5 w-5 text-gray-400" />
+                </div>
                 <input
                   type="text"
                   value={data.location}
                   onChange={(e) => updateData({ location: e.target.value })}
-                  className="block w-full rounded-lg border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="pl-11 block w-full rounded-lg border-gray-300 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   placeholder="e.g., Yenna Gudde"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
-                <input
-                  type="text"
-                  value={data.city}
-                  onChange={(e) => updateData({ city: e.target.value })}
-                  className="block w-full rounded-lg border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="Udupi"
-                />
-              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">City / Town</label>
+              <input
+                type="text"
+                value={data.city}
+                onChange={(e) => updateData({ city: e.target.value })}
+                className="block w-full rounded-lg border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="e.g., Udupi"
+              />
             </div>
 
             <button
@@ -407,7 +424,7 @@ export function PublicBookingForm() {
                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Morning</h4>
                     <div className="grid grid-cols-3 gap-2">
                       {MORNING_SLOTS.map(time24 => {
-                        const isBooked = bookedSlots.includes(time24)
+                        const isBooked = bookedSlots.includes(time24) || isPast(time24)
                         const isSelected = selectedTime24 === time24
                         return (
                           <button
@@ -444,7 +461,7 @@ export function PublicBookingForm() {
                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Afternoon</h4>
                     <div className="grid grid-cols-3 gap-2">
                       {AFTERNOON_SLOTS.map(time24 => {
-                        const isBooked = bookedSlots.includes(time24)
+                        const isBooked = bookedSlots.includes(time24) || isPast(time24)
                         const isSelected = selectedTime24 === time24
                         return (
                           <button
