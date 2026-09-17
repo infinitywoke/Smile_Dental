@@ -6,7 +6,7 @@ ALTER TABLE booking_requests ADD COLUMN IF NOT EXISTS dob DATE;
 
 -- 2. Patient Relationships
 CREATE TABLE IF NOT EXISTS patient_relationships (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
     related_patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
@@ -33,7 +33,7 @@ CREATE TYPE specialist_referral_status AS ENUM (
 );
 
 CREATE TABLE IF NOT EXISTS specialist_referrals (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
     appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,

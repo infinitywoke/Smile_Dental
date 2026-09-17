@@ -12,7 +12,7 @@ CREATE TYPE treatment_status AS ENUM ('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CA
 
 -- TENANTS
 CREATE TABLE tenants (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -28,7 +28,7 @@ CREATE TABLE users (
 
 -- BOOKING REQUESTS
 CREATE TABLE booking_requests (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
     name TEXT NOT NULL,
     phone TEXT NOT NULL,
@@ -44,7 +44,7 @@ CREATE TABLE booking_requests (
 
 -- PATIENTS
 CREATE TABLE patients (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
     name TEXT NOT NULL,
     date_of_birth DATE,
@@ -56,7 +56,7 @@ CREATE TABLE patients (
 
 -- LEGACY RECORDS (From Tally/migration)
 CREATE TABLE legacy_records (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
     patient_id UUID REFERENCES patients(id) ON DELETE SET NULL,
     source_system TEXT NOT NULL, -- e.g., 'TALLY'
@@ -71,7 +71,7 @@ CREATE TABLE legacy_records (
 
 -- APPOINTMENTS
 CREATE TABLE appointments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
     patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE RESTRICT,
     scheduled_start TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE appointments (
 
 -- CLINICAL RECORDS
 CREATE TABLE clinical_records (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
     patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE RESTRICT,
     appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
@@ -102,7 +102,7 @@ CREATE TABLE clinical_records (
 
 -- CLINICAL RECORD TEETH
 CREATE TABLE clinical_record_teeth (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     clinical_record_id UUID NOT NULL REFERENCES clinical_records(id) ON DELETE CASCADE,
     tooth_number TEXT NOT NULL,
     notes TEXT
@@ -110,7 +110,7 @@ CREATE TABLE clinical_record_teeth (
 
 -- TREATMENT PLANS
 CREATE TABLE treatment_plans (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
     patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE RESTRICT,
     name TEXT NOT NULL,
@@ -119,7 +119,7 @@ CREATE TABLE treatment_plans (
 
 -- TREATMENT ITEMS
 CREATE TABLE treatment_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     treatment_plan_id UUID NOT NULL REFERENCES treatment_plans(id) ON DELETE CASCADE,
     procedure TEXT NOT NULL,
     tooth_number TEXT,
@@ -132,7 +132,7 @@ CREATE TABLE treatment_items (
 
 -- PAYMENTS
 CREATE TABLE payments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
     patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE RESTRICT,
     appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
