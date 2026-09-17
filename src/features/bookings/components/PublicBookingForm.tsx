@@ -209,7 +209,7 @@ export function PublicBookingForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Location / Area</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Locality/ Neighborhood/ Area</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <MapPin className="h-5 w-5 text-gray-400" />
@@ -219,7 +219,7 @@ export function PublicBookingForm() {
                   value={data.location}
                   onChange={(e) => updateData({ location: e.target.value })}
                   className="pl-11 block w-full rounded-lg border-gray-300 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="Downtown"
+                  placeholder="e.g., Yenna Gudde"
                 />
               </div>
             </div>
@@ -391,7 +391,7 @@ export function PublicBookingForm() {
                 <span className="font-medium text-gray-900">{data.phone}</span>
               </div>
               <div className="flex justify-between border-b border-gray-200 pb-3">
-                <span className="text-gray-500">Location</span>
+                <span className="text-gray-500">Area</span>
                 <span className="font-medium text-gray-900">{data.location}, {data.city}</span>
               </div>
               <div className="flex justify-between border-b border-gray-200 pb-3">
