@@ -17,11 +17,11 @@ const navigation = [
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
-export function Sidebar() {
+export function Sidebar({ onMobileNavigate }: { onMobileNavigate?: () => void }) {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-white">
+    <div className="flex h-full w-full md:w-64 flex-col border-r bg-white">
       <div className="flex h-16 shrink-0 items-center px-6 border-b">
         <span className="text-xl font-semibold text-blue-900">Smile Dental</span>
       </div>
@@ -33,6 +33,7 @@ export function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={onMobileNavigate}
                 className={cn(
                   isActive
                     ? 'bg-blue-50 text-blue-700'

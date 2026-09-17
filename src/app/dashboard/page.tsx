@@ -50,11 +50,22 @@ export default async function DashboardPage() {
     { name: "Pending Requests", stat: pendingRequests.length, icon: Clock },
   ]
 
+  const istHour = parseInt(new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', hourCycle: 'h23' }).format(new Date()))
+  const greeting = istHour < 12 ? 'Good morning' : istHour < 17 ? 'Good afternoon' : 'Good evening'
+  
+  const formattedDate = new Intl.DateTimeFormat('en-IN', { 
+    timeZone: 'Asia/Kolkata', 
+    weekday: 'long', 
+    day: '2-digit', 
+    month: 'long', 
+    year: 'numeric' 
+  }).format(new Date())
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold leading-6 text-gray-900">Good morning, Dr. Ananya</h1>
-        <p className="mt-2 text-sm text-gray-700">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
+        <h1 className="text-2xl font-semibold leading-6 text-gray-900">{greeting}, Dr. Rahil</h1>
+        <p className="mt-2 text-sm text-gray-700">{formattedDate}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
