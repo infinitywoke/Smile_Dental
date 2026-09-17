@@ -1,4 +1,5 @@
 import { siteConfig } from '@/config/site'
+import Image from 'next/image'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -21,15 +22,46 @@ export default function AboutPage() {
           At {siteConfig.name}, we believe that visiting the dentist shouldn't be stressful. We've built our practice around patient comfort, transparent communication, and advanced, pain-free dental techniques.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-4">Meet {siteConfig.dentist.name}</h2>
-        <p className="font-medium text-gray-900">{siteConfig.dentist.qualifications}</p>
-        <p className="mb-4 text-blue-600">{siteConfig.dentist.experience}</p>
-        <p>
-          {siteConfig.dentist.bio}
-        </p>
-        <p>
-          Committed to continuous education, {siteConfig.dentist.name} regularly updates their skills with the latest advancements in dental science to bring you the best care possible.
-        </p>
+        <h2 className="text-3xl font-bold text-gray-900 mt-16 mb-8">Meet {siteConfig.dentist.name}</h2>
+        
+        <div className="flex flex-col md:flex-row gap-10 items-start">
+          <div className="w-full md:w-1/3 shrink-0">
+            <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden shadow-lg ring-1 ring-gray-200">
+              <Image 
+                src={siteConfig.dentist.portraitPhoto}
+                alt={`Portrait of ${siteConfig.dentist.name}`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            </div>
+          </div>
+          
+          <div className="w-full md:w-2/3 space-y-6">
+            <div>
+              <p className="text-lg font-bold text-gray-900 m-0">{siteConfig.dentist.qualifications}</p>
+              <p className="text-blue-600 font-medium mt-1">{siteConfig.dentist.experience}</p>
+            </div>
+            
+            <p className="leading-relaxed">
+              <strong>{siteConfig.dentist.name}</strong> brings a caring, approachable touch to modern dentistry. He believes every patient deserves to feel comfortable, heard, and completely confident about their dental care.
+            </p>
+            
+            <p className="leading-relaxed">
+              He takes the time to understand your unique needs, carefully explaining treatment options in a simple and reassuring way. Leading the team at {siteConfig.name} in Katapadi, Udupi, he strives to transform every dental visit into a positive experience.
+            </p>
+
+            <p className="leading-relaxed">
+              A firm believer in continuous education, {siteConfig.dentist.name} actively pursues the latest advancements in dental science to ensure you receive the highest standard of care. He helps you achieve a healthy, natural-looking smile you can truly be proud of.
+            </p>
+            
+            <div className="pt-4">
+              <p className="text-xl font-semibold text-blue-900 border-l-4 border-blue-600 pl-4 py-2 bg-blue-50/50 rounded-r-lg">
+                "We put your comfort, trust, and smile at the absolute heart of our care."
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
