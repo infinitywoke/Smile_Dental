@@ -105,11 +105,12 @@ test.describe('Specialist Referral Workflow & Integration', () => {
     const appt50 = await apiReq('createAppointment', {
       patient_id: patientAId,
       date: '2026-10-01',
-      start_time: '10:00',
-      end_time: '11:00',
+      start_time: '12:00',
+      end_time: '13:00',
       reason: 'Specialist Visit',
       specialist_referral_id: referralA.id
     });
+    console.log('appt50:', appt50);
     expect(appt50.success).toBe(true);
 
     const refFinal = await apiReq('queryReferral', { id: referralA.id });
