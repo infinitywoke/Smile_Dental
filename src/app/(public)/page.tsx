@@ -49,7 +49,7 @@ export default function HomePage() {
       />
       {/* 1. Hero Section */}
       <section className="relative bg-blue-50 py-20 sm:py-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div className="max-w-2xl lg:max-w-none">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
               Your Smile,<br className="hidden sm:block" /> Our Priority.
@@ -58,6 +58,18 @@ export default function HomePage() {
               Experience the highest standard of dental care in a comfortable, relaxing environment.{" "}
               {siteConfig.dentist.name} and our expert team are dedicated to your long-term oral health.
             </p>
+
+            {/* Mobile Photo - Shows above CTA buttons on mobile */}
+            <div className="relative h-80 sm:h-96 w-full rounded-2xl overflow-hidden shadow-2xl mb-8 lg:hidden">
+              <Image
+                src={siteConfig.dentist.actionPhoto!}
+                alt="Clinical Procedure"
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
               <Link 
                 href="/book" 
@@ -84,12 +96,15 @@ export default function HomePage() {
               </a>
             </div>
           </div>
-          <div className="relative h-80 sm:h-96 lg:h-full min-h-[400px] w-full rounded-2xl overflow-hidden shadow-2xl">
+          
+          {/* Desktop Photo - Hidden on mobile */}
+          <div className="hidden lg:block relative h-full min-h-[400px] w-full rounded-2xl overflow-hidden shadow-2xl">
             <Image
               src={siteConfig.dentist.actionPhoto!}
               alt="Clinical Procedure"
               fill
               className="object-cover"
+              priority
             />
           </div>
         </div>
