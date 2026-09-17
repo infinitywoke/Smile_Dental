@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { siteConfig } from '@/config/site'
-import { Phone, Calendar } from 'lucide-react'
+import { Phone } from 'lucide-react'
+import { PublicHeader } from '@/components/layout/PublicHeader'
 
 export default function PublicLayout({
   children,
@@ -22,44 +23,7 @@ export default function PublicLayout({
         </div>
       </div>
 
-      {/* Main Navigation */}
-      <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0 z-10">
-              <div className="relative h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
-                <Image 
-                  src={siteConfig.media.logo} 
-                  alt={siteConfig.name} 
-                  fill
-                  className="object-contain object-left"
-                  priority
-                />
-              </div>
-              <span className="font-bold text-base sm:text-lg md:text-xl text-blue-700 tracking-tight truncate">
-                {siteConfig.name}
-              </span>
-            </Link>
-
-            <nav className="hidden md:flex gap-6 items-center">
-              <Link href="/treatments" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Treatments</Link>
-              <Link href="/about" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">About</Link>
-              <Link href="/contact" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Contact</Link>
-              <Link href="/faq" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">FAQ</Link>
-            </nav>
-
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/book" 
-                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all"
-              >
-                <Calendar className="w-4 h-4 mr-2 hidden sm:block" />
-                Book Appointment
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main className="flex-1 bg-white">
         {children}
