@@ -26,8 +26,8 @@ export default function PublicLayout({
       <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="relative h-10 w-40 sm:w-48">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3">
+              <div className="relative h-10 w-10 sm:w-12 flex-shrink-0">
                 <Image 
                   src={siteConfig.media.logo} 
                   alt={siteConfig.name} 
@@ -36,6 +36,9 @@ export default function PublicLayout({
                   priority
                 />
               </div>
+              <span className="font-bold text-lg sm:text-xl md:text-2xl text-blue-600 tracking-tight whitespace-nowrap">
+                {siteConfig.name}
+              </span>
             </Link>
 
             <nav className="hidden md:flex gap-6 items-center">
@@ -66,13 +69,16 @@ export default function PublicLayout({
       <footer className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
-            <div className="relative h-12 w-48 bg-white rounded p-2 inline-block">
-              <Image 
-                src={siteConfig.media.logo} 
-                alt={siteConfig.name} 
-                fill
-                className="object-contain"
-              />
+            <div className="flex items-center gap-3">
+              <div className="relative h-12 w-12 bg-white rounded p-1.5 flex-shrink-0">
+                <Image 
+                  src={siteConfig.media.logo} 
+                  alt={siteConfig.name} 
+                  fill
+                  className="object-contain p-1"
+                />
+              </div>
+              <h3 className="text-xl font-bold text-white tracking-tight">{siteConfig.name}</h3>
             </div>
             <p className="text-sm text-gray-400 mt-2">{siteConfig.description}</p>
             <Link href="/login" className="text-xs text-gray-500 hover:text-white transition-colors">Clinic Staff Login</Link>
