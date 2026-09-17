@@ -1,8 +1,9 @@
-'use client'
+﻿'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { submitBookingForm } from '@/features/bookings/actions/bookingActions'
-import { Calendar, Clock, User, Phone, CheckCircle2, MessageSquare, ArrowLeft, ArrowRight, ClipboardList, MapPin } from 'lucide-react'
+import { Calendar, Clock, User, Phone, CheckCircle2, MessageSquare, ArrowLeft, ArrowRight, ClipboardList, MapPin, AlertCircle, X } from 'lucide-react'
+import { siteConfig } from '@/config/site'
 
 type BookingData = {
   name: string
@@ -17,12 +18,38 @@ type BookingData = {
   preferred_time_ampm: 'AM' | 'PM'
 }
 
+const MORNING_SLOTS = ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00"]
+const AFTERNOON_SLOTS = ["14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"]
+
+function formatTimeDisplay(time24: string) {
+  const [h, m] = time24.split(':')
+  let hours = parseInt(h, 10)
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  if (hours > 12) hours -= 12
+  if (hours === 0) hours = 12
+  return `${hours}:${m} ${ampm}`
+}
+
+function parseTimeForData(time24: string): { time: string, ampm: 'AM' | 'PM' } {
+  const [h, m] = time24.split(':')
+  let hours = parseInt(h, 10)
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  if (hours > 12) hours -= 12
+  if (hours === 0) hours = 12
+  const time = `${hours.toString().padStart(2, '0')}:${m}`
+  return { time, ampm }
+}
+
 export function PublicBookingForm() {
   const [step, setStep] = useState<number>(1)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   
+  const [bookedSlots, setBookedSlots] = useState<string[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [isSOS, setIsSOS] = useState(false)
+
   const [data, setData] = useState<BookingData>({
     name: '',
     phone: '',
@@ -32,93 +59,143 @@ export function PublicBookingForm() {
     reason: '',
     notes: '',
     preferred_date: '',
-    preferred_time: '10:00',
+    preferred_time: '',
     preferred_time_ampm: 'AM'
   })
 
-  // Prefill reason if it exists in URL
-  if (typeof window !== 'undefined' && !data.reason) {
-    const urlParams = new URLSearchParams(window.location.search)
-    const reasonParam = urlParams.get('reason')
-    if (reasonParam) {
-      setData(prev => ({ ...prev, reason: reasonParam }))
-    }
-  }
-
-  const updateData = (fields: Partial<BookingData>) => {
-    setData(prev => ({ ...prev, ...fields }))
-  }
-
-  const handleNext = () => setStep(s => s + 1)
-  const handleBack = () => setStep(s => Math.max(1, s - 1))
-
-  const handleSubmit = async () => {
-    setError(null)
-    setLoading(true)
-
-    const formData = new FormData()
-    formData.append('name', data.name)
-    formData.append('phone', data.phone)
-    if (data.dob) formData.append('dob', data.dob)
-    if (data.location) formData.append('location', data.location)
-    if (data.city) formData.append('city', data.city)
-    formData.append('reason', data.reason)
-    if (data.notes) formData.append('notes', data.notes)
-    formData.append('preferred_date', data.preferred_date)
-    
-    if (data.preferred_time) {
-      // Convert to 24h for backend if needed, or just send the AM/PM string.
-      // Easiest is just to append the AM/PM string so it's readable.
-      formData.append('preferred_time', `${data.preferred_time} ${data.preferred_time_ampm}`)
-    }
-    
-    // Add source param if it exists in URL
-    if (typeof window !== 'undefined') {
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !data.reason) {
       const urlParams = new URLSearchParams(window.location.search)
-      const source = urlParams.get('source')
-      if (source) {
-        formData.append('source', source.toUpperCase())
+      const reasonParam = urlParams.get('reason')
+      if (reasonParam) {
+        setData(prev => ({ ...prev, reason: reasonParam }))
       }
     }
+  }, [])
 
-    const result = await submitBookingForm(formData)
-    
-    if (result.error) {
-      setError(result.error)
-    } else if (result.success) {
-      setSuccess(true)
+  useEffect(() => {
+    async function fetchAvailability() {
+      if (!data.preferred_date) {
+        setBookedSlots([])
+        return
+      }
+      setLoadingSlots(true)
+      try {
+        const res = await fetch(`/api/availability?date=${data.preferred_date}`)
+        const json = await res.json()
+        if (json.bookedSlots) {
+          setBookedSlots(json.bookedSlots)
+        }
+      } catch (err) {
+        console.error('Failed to load slots', err)
+      } finally {
+        setLoadingSlots(false)
+      }
     }
+    fetchAvailability()
+  }, [data.preferred_date])
+
+  const updateData = (updates: Partial<BookingData>) => {
+    setData(prev => ({ ...prev, ...updates }))
+  }
+
+  const handleNext = () => setStep(s => Math.min(s + 1, 4))
+  const handleBack = () => setStep(s => Math.max(s - 1, 1))
+
+  const handleSOS = () => {
+    setIsSOS(true)
+  }
+
+  const handleCloseSOS = () => {
+    setIsSOS(false)
+    const d = new Date()
+    while (d.getDay() === 5) {
+      d.setDate(d.getDate() + 1)
+    }
+    const ds = d.toISOString().split('T')[0]
+    updateData({ preferred_date: ds, preferred_time: '08:30', preferred_time_ampm: 'AM', reason: 'EMERGENCY' })
+    setStep(4)
+  }
+
+  const handleSlotSelect = (time24: string) => {
+    const { time, ampm } = parseTimeForData(time24)
+    updateData({ preferred_time: time, preferred_time_ampm: ampm })
+  }
+
+  const handleSubmit = async () => {
+    setLoading(true)
+    setError(null)
     
-    setLoading(false)
+    try {
+      const formData = new FormData()
+      formData.append('name', data.name)
+      formData.append('phone', data.phone)
+      if (data.dob) formData.append('dob', data.dob)
+      if (data.location) formData.append('location', data.location)
+      if (data.city) formData.append('city', data.city)
+      formData.append('reason', data.reason)
+      if (data.notes) formData.append('notes', data.notes)
+      formData.append('preferred_date', data.preferred_date)
+      
+      if (data.preferred_time) {
+        let [h, m] = data.preferred_time.split(':')
+        let hours = parseInt(h, 10)
+        if (data.preferred_time_ampm === 'PM' && hours !== 12) hours += 12
+        if (data.preferred_time_ampm === 'AM' && hours === 12) hours = 0
+        const time24 = `${hours.toString().padStart(2, '0')}:${m}:00`
+        formData.append('preferred_time', time24)
+      }
+      
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search)
+        const source = urlParams.get('source')
+        if (source) {
+          formData.append('source', source.toUpperCase())
+        }
+      }
+
+      const result = await submitBookingForm(formData)
+      if (result.error) throw new Error(result.error)
+      setSuccess(true)
+    } catch (err: any) {
+      setError(err.message || 'Failed to submit booking request. Please try calling us.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (success) {
     return (
-      <div className="bg-green-50 rounded-xl p-8 text-center shadow-sm border border-green-100 max-w-md mx-auto mt-12">
-        <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-6" />
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Request Received</h2>
-        <p className="text-lg text-gray-700">
-          Thank you for reaching out. The clinic will contact you shortly to confirm your appointment.
+      <div className="max-w-md mx-auto mt-12 bg-white rounded-xl shadow-lg border border-gray-100 p-8 text-center">
+        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
+          <CheckCircle2 className="w-10 h-10 text-green-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Received!</h2>
+        <p className="text-gray-600 mb-8">
+          Thank you, {data.name}. Our team will review your request and contact you at {data.phone} to confirm your appointment time.
         </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="inline-flex justify-center w-full rounded-lg bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+        >
+          Book Another Appointment
+        </button>
       </div>
     )
   }
 
-  // Pre-generate time slots in 12h format
-  const generateTimeSlots = () => {
-    const slots = []
-    for (let h = 1; h <= 12; h++) {
-      const hour = h.toString().padStart(2, '0')
-      slots.push(`${hour}:00`)
-      slots.push(`${hour}:30`)
-    }
-    return slots
-  }
-  const timeSlots = generateTimeSlots()
+  const isFriday = data.preferred_date ? new Date(data.preferred_date).getDay() === 5 : false
+  const selectedTime24 = (() => {
+    if (!data.preferred_time) return null
+    let [h, m] = data.preferred_time.split(':')
+    let hours = parseInt(h, 10)
+    if (data.preferred_time_ampm === 'PM' && hours !== 12) hours += 12
+    if (data.preferred_time_ampm === 'AM' && hours === 12) hours = 0
+    return `${hours.toString().padStart(2, '0')}:${m}`
+  })()
 
   return (
     <div className="max-w-md mx-auto mt-12 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-      {/* Progress Bar */}
       <div className="bg-gray-100 h-1.5 w-full">
         <div 
           className="bg-blue-600 h-1.5 transition-all duration-300 ease-in-out" 
@@ -126,19 +203,19 @@ export function PublicBookingForm() {
         />
       </div>
 
-      <div className="p-8">
+      <div className="p-6 sm:p-8">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
-            {error}
+          <div className="mb-6 bg-red-50 text-red-600 p-4 rounded-lg text-sm flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <p>{error}</p>
           </div>
         )}
 
-        {/* STEP 1: Details */}
         {step === 1 && (
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-900">Your Details</h2>
-              <p className="text-gray-500 mt-2">Let's start with your contact info.</p>
+              <p className="text-gray-500 mt-2">Let us know how to reach you.</p>
             </div>
             
             <div>
@@ -176,50 +253,23 @@ export function PublicBookingForm() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Date of Birth</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Calendar className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="date"
-                    value={data.dob}
-                    onChange={(e) => updateData({ dob: e.target.value })}
-                    className="pl-11 block w-full rounded-lg border-gray-300 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">City/Town/Village</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <MapPin className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    value={data.city}
-                    onChange={(e) => updateData({ city: e.target.value })}
-                    className="pl-11 block w-full rounded-lg border-gray-300 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    placeholder="New York"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Locality/ Neighborhood/ Area</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <MapPin className="h-5 w-5 text-gray-400" />
-                </div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Locality/ Neighborhood/ Area</label>
                 <input
                   type="text"
                   value={data.location}
                   onChange={(e) => updateData({ location: e.target.value })}
-                  className="pl-11 block w-full rounded-lg border-gray-300 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="block w-full rounded-lg border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   placeholder="e.g., Yenna Gudde"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
+                <input
+                  type="text"
+                  value={data.city}
+                  onChange={(e) => updateData({ city: e.target.value })}
+                  className="block w-full rounded-lg border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  placeholder="Udupi"
                 />
               </div>
             </div>
@@ -234,7 +284,6 @@ export function PublicBookingForm() {
           </div>
         )}
 
-        {/* STEP 2: Reason */}
         {step === 2 && (
           <div className="space-y-6">
             <div className="text-center mb-8">
@@ -244,43 +293,29 @@ export function PublicBookingForm() {
             
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Reason for Visit</label>
-              {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('reason') ? (
-                <input 
-                  type="text"
-                  readOnly
-                  value={data.reason}
-                  className="block w-full bg-gray-50 rounded-lg border-gray-200 py-3 px-4 text-gray-500 shadow-sm sm:text-sm cursor-not-allowed"
-                />
-              ) : (
-                <select
-                  value={data.reason}
-                  onChange={(e) => updateData({ reason: e.target.value })}
-                  className="block w-full rounded-lg border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white"
-                  autoFocus
-                >
-                  <option value="">Select a reason...</option>
-                  <option value="General Checkup">General Checkup / Cleaning</option>
-                  <option value="Tooth Pain">Tooth Pain</option>
-                  <option value="Consultation">Consultation</option>
-                  <option value="Other">Other</option>
-                </select>
-              )}
+              <select
+                value={data.reason}
+                onChange={(e) => updateData({ reason: e.target.value })}
+                className="block w-full rounded-lg border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white"
+                autoFocus
+              >
+                <option value="">Select a reason...</option>
+                <option value="General Checkup">General Checkup / Cleaning</option>
+                <option value="Tooth Pain">Tooth Pain</option>
+                <option value="Consultation">Consultation</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Additional Notes (Optional)</label>
-              <div className="relative">
-                <div className="absolute top-3 left-3.5 pointer-events-none">
-                  <MessageSquare className="h-5 w-5 text-gray-400" />
-                </div>
-                <textarea
-                  value={data.notes}
-                  onChange={(e) => updateData({ notes: e.target.value })}
-                  rows={3}
-                  className="pl-11 block w-full rounded-lg border-gray-300 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="Any details you'd like us to know?"
-                />
-              </div>
+              <textarea
+                value={data.notes}
+                onChange={(e) => updateData({ notes: e.target.value })}
+                rows={3}
+                className="block w-full rounded-lg border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="Any details you'd like us to know?"
+              />
             </div>
 
             <div className="flex gap-3 mt-8">
@@ -301,13 +336,41 @@ export function PublicBookingForm() {
           </div>
         )}
 
-        {/* STEP 3: Date & Time */}
         {step === 3 && (
           <div className="space-y-6">
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">When works best?</h2>
               <p className="text-gray-500 mt-2">Choose your preferred date & time.</p>
             </div>
+
+            {/* SOS Button Section */}
+            {!isSOS ? (
+              <button 
+                onClick={handleSOS}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-red-50 text-red-600 font-semibold border border-red-200 hover:bg-red-100 transition-colors mb-6"
+              >
+                <AlertCircle className="w-5 h-5" />
+                SOS / This is an Emergency
+              </button>
+            ) : (
+              <div className="w-full bg-red-600 text-white rounded-lg p-4 mb-6 relative shadow-lg">
+                <button 
+                  onClick={handleCloseSOS}
+                  className="absolute top-2 right-2 text-red-200 hover:text-white p-1 rounded-full hover:bg-red-700 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="flex flex-col items-center text-center space-y-2 mt-2">
+                  <AlertCircle className="w-8 h-8 text-red-200" />
+                  <h3 className="font-bold text-lg">Emergency Assistance</h3>
+                  <p className="text-red-100 text-sm mb-2">Please call the clinic immediately to confirm an urgent slot:</p>
+                  <a href={`tel:${siteConfig.phone.replace(/\D/g,'')}`} className="text-2xl font-black tracking-wider hover:underline">
+                    {siteConfig.phone}
+                  </a>
+                  <p className="text-xs text-red-200 mt-2">Close this banner to proceed with the earliest available appointment request.</p>
+                </div>
+              </div>
+            )}
             
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Preferred Date</label>
@@ -321,38 +384,90 @@ export function PublicBookingForm() {
                   onChange={(e) => updateData({ preferred_date: e.target.value })}
                   min={new Date().toISOString().split('T')[0]}
                   className="pl-11 block w-full rounded-lg border-gray-300 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  autoFocus
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Preferred Time (Optional)</label>
-              <div className="flex gap-3">
-                <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Clock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <select
-                    value={data.preferred_time}
-                    onChange={(e) => updateData({ preferred_time: e.target.value })}
-                    className="pl-11 block w-full rounded-lg border-gray-300 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white"
-                  >
-                    {timeSlots.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-                <select
-                  value={data.preferred_time_ampm}
-                  onChange={(e) => updateData({ preferred_time_ampm: e.target.value as 'AM' | 'PM' })}
-                  className="w-24 block rounded-lg border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white"
-                >
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
+            {data.preferred_date && isFriday && (
+              <div className="bg-orange-50 border border-orange-200 text-orange-800 p-4 rounded-lg text-center font-medium">
+                Our clinic is closed on Fridays. Please select another date.
               </div>
-            </div>
+            )}
+
+            {data.preferred_date && !isFriday && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-4 flex justify-between items-center">
+                  <span>Available Time Slots</span>
+                  {loadingSlots && <span className="text-blue-600 text-xs">Loading...</span>}
+                </label>
+                
+                <div className="space-y-6">
+                  {/* Morning Slots */}
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Morning</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {MORNING_SLOTS.map(time24 => {
+                        const isBooked = bookedSlots.includes(time24)
+                        const isSelected = selectedTime24 === time24
+                        return (
+                          <button
+                            key={time24}
+                            disabled={isBooked}
+                            onClick={() => handleSlotSelect(time24)}
+                            className={`py-2 px-1 text-sm font-medium rounded-md border text-center transition-all ${
+                              isBooked 
+                                ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60' 
+                                : isSelected
+                                ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                                : 'bg-white border-gray-300 text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50'
+                            }`}
+                          >
+                            {formatTimeDisplay(time24)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Lunch Break Divider */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                      <div className="w-full border-t border-gray-200" />
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-white px-3 text-xs font-semibold text-gray-400 uppercase">Lunch Break (1:00 PM - 2:30 PM)</span>
+                    </div>
+                  </div>
+
+                  {/* Afternoon Slots */}
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Afternoon</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {AFTERNOON_SLOTS.map(time24 => {
+                        const isBooked = bookedSlots.includes(time24)
+                        const isSelected = selectedTime24 === time24
+                        return (
+                          <button
+                            key={time24}
+                            disabled={isBooked}
+                            onClick={() => handleSlotSelect(time24)}
+                            className={`py-2 px-1 text-sm font-medium rounded-md border text-center transition-all ${
+                              isBooked 
+                                ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60' 
+                                : isSelected
+                                ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                                : 'bg-white border-gray-300 text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50'
+                            }`}
+                          >
+                            {formatTimeDisplay(time24)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-3 mt-8">
               <button
@@ -363,7 +478,7 @@ export function PublicBookingForm() {
               </button>
               <button
                 onClick={handleNext}
-                disabled={!data.preferred_date}
+                disabled={!data.preferred_date || isFriday || (!data.preferred_time && !isSOS)}
                 className="flex-[2] flex items-center justify-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Review <ArrowRight className="w-5 h-5" />
@@ -372,7 +487,6 @@ export function PublicBookingForm() {
           </div>
         )}
 
-        {/* STEP 4: Review */}
         {step === 4 && (
           <div className="space-y-6">
             <div className="text-center mb-8">
@@ -391,7 +505,7 @@ export function PublicBookingForm() {
                 <span className="font-medium text-gray-900">{data.phone}</span>
               </div>
               <div className="flex justify-between border-b border-gray-200 pb-3">
-                <span className="text-gray-500">Area</span>
+                <span className="text-gray-500">Locality/Area</span>
                 <span className="font-medium text-gray-900">{data.location}, {data.city}</span>
               </div>
               <div className="flex justify-between border-b border-gray-200 pb-3">
@@ -434,4 +548,3 @@ export function PublicBookingForm() {
     </div>
   )
 }
-
