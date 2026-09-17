@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Users, Calendar, Inbox, ClipboardList, CreditCard, BarChart3, Database, Settings, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { siteConfig } from '@/config/site'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -22,8 +24,16 @@ export function Sidebar({ onMobileNavigate }: { onMobileNavigate?: () => void })
 
   return (
     <div className="flex h-full w-full md:w-64 flex-col border-r bg-white">
-      <div className="flex h-16 shrink-0 items-center px-6 border-b">
-        <span className="text-xl font-semibold text-blue-900">Smile Dental</span>
+      <div className="flex h-16 shrink-0 items-center gap-2 px-6 border-b">
+        <div className="relative h-8 w-8 flex-shrink-0">
+          <Image 
+            src={siteConfig.media.logo} 
+            alt="Logo" 
+            fill
+            className="object-contain"
+          />
+        </div>
+        <span className="text-lg font-bold text-blue-900 tracking-tight truncate">Smile Dental Clinic</span>
       </div>
       <div className="flex flex-1 flex-col overflow-y-auto">
         <nav className="flex-1 space-y-1 px-4 py-4">
