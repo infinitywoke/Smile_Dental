@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { siteConfig } from '@/config/site'
-import { Phone } from 'lucide-react'
 import { PublicHeader } from '@/components/layout/PublicHeader'
 
 export default function PublicLayout({
@@ -11,18 +10,6 @@ export default function PublicLayout({
 }) {
   return (
     <div className="min-h-screen flex flex-col font-sans">
-      {/* Top Banner (Optional for contact info) */}
-      <div className="bg-blue-900 text-blue-50 py-2 px-4 text-xs sm:text-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex gap-4">
-            <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {siteConfig.phone}</span>
-          </div>
-          <div className="hidden sm:block">
-            {siteConfig.address}
-          </div>
-        </div>
-      </div>
-
       <PublicHeader />
 
       <main className="flex-1 bg-white">
