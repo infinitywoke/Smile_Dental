@@ -13,37 +13,27 @@ const priorityWeight: Record<ActionPriority, number> = {
  * Deterministic rules engine to generate clinic actions for a given patient.
  * Uses targeted server-side queries.
  */
-export async function getPatientActions(patientId: string): Promise<ClinicAction[]> {
-  const supabase = await createClient()
+/**
+ * Pure deterministic rules engine to compute clinic actions from pre-fetched state.
+ * Exposed for rigorous unit testing.
+ */
+export function computePatientActions(
+  patientId: string,
+  patientName: string,
+  appointments: any[],
+  treatmentPlans: any[],
+  hasUpcomingAppointment: boolean,
+  payments: any[],
+  treatmentItems: any[],
+  referrals: any[],
+  clinicalRecords: any[],
+  lastCompletedDate: string | null
+): ClinicAction[] {
   const actions: ClinicAction[] = []
 
-  // Run targeted queries concurrently
-  const [
-    patientRes,
-    aptsRes,
-    plansRes,
-    futureAptsRes,
-    paymentsRes,
-    itemsRes,
-    refsRes,
-    recentNotesRes
-  ] = await Promise.all([
-    supabase.from('patients').select('name').eq('id', patientId).single(),
-    supabase.from('appointments').select('id, status, updated_at').eq('patient_id', patientId).in('status', ['CHECKED_IN', 'IN_PROGRESS', 'COMPLETED']).order('updated_at', { ascending: false }).limit(5),
-    supabase.from('treatment_plans').select('id, name, created_at').eq('patient_id', patientId).eq('status', 'ACTIVE'),
-    supabase.from('appointments').select('id').eq('patient_id', patientId).in('status', ['SCHEDULED', 'CONFIRMED']).gt('scheduled_start', new Date().toISOString()),
-    supabase.from('payments').select('amount_paid').eq('patient_id', patientId),
-    supabase.from('treatment_items').select('estimated_cost').eq('patient_id', patientId).neq('status', 'CANCELLED'),
-    supabase.from('specialist_referrals').select('id, status, created_at, specialist_name').eq('patient_id', patientId).in('status', ['PENDING_ADVANCE', 'ADVANCE_PAID']),
-    supabase.from('clinical_records').select('appointment_id').eq('patient_id', patientId)
-  ])
-
-  const patientName = patientRes.data?.name || 'Unknown'
-  const hasUpcomingAppointment = futureAptsRes.data && futureAptsRes.data.length > 0
-
   // 1. IN CHAIR / WAITING (NOW)
-  if (aptsRes.data) {
-    for (const apt of aptsRes.data) {
+  if (appointments) {
+    for (const apt of appointments) {
       if (apt.status === 'IN_PROGRESS') {
         actions.push({
           id: `apt_now_${apt.id}`,
@@ -78,8 +68,8 @@ export async function getPatientActions(patientId: string): Promise<ClinicAction
 
   // 2. FINANCIAL: OUTSTANDING BALANCE
   let balance = 0
-  itemsRes.data?.forEach(i => { balance += Number(i.estimated_cost) || 0 })
-  paymentsRes.data?.forEach(p => { balance -= Number(p.amount_paid) || 0 })
+  treatmentItems?.forEach(i => { balance += Number(i.estimated_cost) || 0 })
+  payments?.forEach(p => { balance -= Number(p.amount_paid) || 0 })
   
   if (balance > 0) {
     actions.push({
@@ -89,7 +79,7 @@ export async function getPatientActions(patientId: string): Promise<ClinicAction
       type: 'COLLECT_PAYMENT',
       source: 'PAYMENT',
       category: 'FINANCIAL',
-      priority: 'NORMAL', // Wait, the rule says operational relevance. Payment is important but doesn't block the chair. Let's stick to NORMAL unless it's a huge overdue amount. Let's make it NORMAL.
+      priority: 'NORMAL',
       title: 'Outstanding Balance',
       description: `₹${balance.toLocaleString()} remains unpaid.`,
       actionUrl: `/dashboard/patients/${patientId}#payments`,
@@ -98,10 +88,9 @@ export async function getPatientActions(patientId: string): Promise<ClinicAction
   }
 
   // 3. CLINICAL: COMPLETE NOTES
-  // If there is a completed appointment without a clinical record
-  if (aptsRes.data && recentNotesRes.data) {
-    const notedAptIds = new Set(recentNotesRes.data.map(n => n.appointment_id))
-    for (const apt of aptsRes.data) {
+  if (appointments && clinicalRecords) {
+    const notedAptIds = new Set(clinicalRecords.map(n => n.appointment_id))
+    for (const apt of appointments) {
       if (apt.status === 'COMPLETED' && !notedAptIds.has(apt.id)) {
         actions.push({
           id: `notes_${apt.id}`,
@@ -121,8 +110,8 @@ export async function getPatientActions(patientId: string): Promise<ClinicAction
   }
 
   // 4. COORDINATION: REVIEW REFERRAL
-  if (refsRes.data) {
-    for (const ref of refsRes.data) {
+  if (referrals) {
+    for (const ref of referrals) {
       actions.push({
         id: `ref_${ref.id}`,
         patientId,
@@ -140,8 +129,8 @@ export async function getPatientActions(patientId: string): Promise<ClinicAction
   }
 
   // 5. SCHEDULING: SCHEDULE FOLLOWUP
-  if (plansRes.data && !hasUpcomingAppointment) {
-    for (const plan of plansRes.data) {
+  if (treatmentPlans && !hasUpcomingAppointment) {
+    for (const plan of treatmentPlans) {
       actions.push({
         id: `plan_${plan.id}`,
         patientId,
@@ -159,22 +148,26 @@ export async function getPatientActions(patientId: string): Promise<ClinicAction
   }
 
   // 6. SCHEDULING: SET RECALL
-  // If no upcoming appointments, no active treatment, and balance is clear, we might want to recall.
-  if (!hasUpcomingAppointment && (!plansRes.data || plansRes.data.length === 0)) {
-    // Only if their last completed appointment was > 6 months ago, but we'll approximate with LOW priority
-    actions.push({
-      id: `recall_${patientId}`,
-      patientId,
-      patientName,
-      type: 'SET_RECALL',
-      source: 'RECALL',
-      category: 'SCHEDULING',
-      priority: 'LOW',
-      title: 'Routine Recall',
-      description: 'Patient meets recall criteria and has no active treatment.',
-      actionUrl: `/dashboard/appointments/new?patientId=${patientId}`,
-      timestamp: new Date().toISOString()
-    })
+  if (!hasUpcomingAppointment && (!treatmentPlans || treatmentPlans.length === 0) && lastCompletedDate) {
+    // Check if more than 6 months have passed since last completed appt
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    
+    if (new Date(lastCompletedDate) < sixMonthsAgo) {
+      actions.push({
+        id: `recall_${patientId}`,
+        patientId,
+        patientName,
+        type: 'SET_RECALL',
+        source: 'RECALL',
+        category: 'SCHEDULING',
+        priority: 'LOW',
+        title: 'Routine Recall',
+        description: 'Patient is due for a routine 6-month checkup.',
+        actionUrl: `/dashboard/appointments/new?patientId=${patientId}`,
+        timestamp: new Date().toISOString()
+      })
+    }
   }
 
   actions.sort((a, b) => {
@@ -185,6 +178,53 @@ export async function getPatientActions(patientId: string): Promise<ClinicAction
   })
 
   return actions
+}
+
+/**
+ * Data-fetching wrapper around computePatientActions.
+ */
+export async function getPatientActions(patientId: string): Promise<ClinicAction[]> {
+  const supabase = await createClient()
+
+  const [
+    patientRes,
+    aptsRes,
+    plansRes,
+    futureAptsRes,
+    paymentsRes,
+    itemsRes,
+    refsRes,
+    recentNotesRes,
+    lastCompletedApptRes
+  ] = await Promise.all([
+    supabase.from('patients').select('name').eq('id', patientId).single(),
+    supabase.from('appointments').select('id, status, updated_at').eq('patient_id', patientId).in('status', ['CHECKED_IN', 'IN_PROGRESS', 'COMPLETED']).order('updated_at', { ascending: false }).limit(5),
+    supabase.from('treatment_plans').select('id, name, created_at').eq('patient_id', patientId).eq('status', 'ACTIVE'),
+    supabase.from('appointments').select('id').eq('patient_id', patientId).in('status', ['SCHEDULED', 'CONFIRMED']).gt('scheduled_start', new Date().toISOString()),
+    supabase.from('payments').select('amount_paid').eq('patient_id', patientId),
+    supabase.from('treatment_items').select('estimated_cost').eq('patient_id', patientId).neq('status', 'CANCELLED'),
+    supabase.from('specialist_referrals').select('id, status, created_at, specialist_name').eq('patient_id', patientId).in('status', ['PENDING_ADVANCE', 'ADVANCE_PAID']),
+    supabase.from('clinical_records').select('appointment_id').eq('patient_id', patientId),
+    supabase.from('appointments').select('scheduled_start').eq('patient_id', patientId).eq('status', 'COMPLETED').order('scheduled_start', { ascending: false }).limit(1)
+  ])
+
+  let lastCompletedDate = null
+  if (lastCompletedApptRes.data && lastCompletedApptRes.data.length > 0) {
+    lastCompletedDate = lastCompletedApptRes.data[0].scheduled_start
+  }
+
+  return computePatientActions(
+    patientId,
+    patientRes.data?.name || 'Unknown',
+    aptsRes.data || [],
+    plansRes.data || [],
+    !!futureAptsRes.data && futureAptsRes.data.length > 0,
+    paymentsRes.data || [],
+    itemsRes.data || [],
+    refsRes.data || [],
+    recentNotesRes.data || [],
+    lastCompletedDate
+  )
 }
 
 export async function getPatientNextAction(patientId: string): Promise<ClinicAction | null> {

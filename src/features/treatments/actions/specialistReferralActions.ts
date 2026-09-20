@@ -72,3 +72,16 @@ export async function cancelSpecialistReferral(referralId: string, patientId: st
   revalidatePath(`/dashboard/patients/${patientId}`)
   return { success: true }
 }
+export async function updateSpecialistReferralStatus(referralId: string, status: string, patientId: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('specialist_referrals')
+    .update({ status })
+    .eq('id', referralId)
+
+  if (error) return { error: error.message }
+  
+  revalidatePath(`/dashboard/patients/${patientId}`)
+  return { success: true }
+}

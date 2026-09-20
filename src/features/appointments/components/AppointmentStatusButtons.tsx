@@ -31,12 +31,17 @@ export function AppointmentStatusButtons({ id, currentStatus }: { id: string, cu
       )}
 
       {currentStatus === 'CHECKED_IN' && (
-        <a
-          href={`/dashboard/appointments/${id}/consultation`}
+        <button
+          onClick={async () => {
+            setIsLoading(true)
+            await updateAppointmentStatus(id, 'IN_PROGRESS')
+            window.location.href = `/dashboard/appointments/${id}/consultation`
+          }}
+          disabled={isLoading}
           className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-sm font-semibold text-purple-800 hover:bg-purple-200"
         >
           <Play className="h-4 w-4" /> Start Visit
-        </a>
+        </button>
       )}
 
       {currentStatus === 'IN_PROGRESS' && (

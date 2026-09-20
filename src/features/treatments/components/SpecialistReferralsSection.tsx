@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Plus, UserCog, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { createSpecialistReferral, cancelSpecialistReferral } from '../actions/specialistReferralActions'
+import { createSpecialistReferral, cancelSpecialistReferral, updateSpecialistReferralStatus } from '../actions/specialistReferralActions'
 import { recordPayment } from '@/features/payments/actions/paymentActions'
 import { format, parseISO } from 'date-fns'
 import { PaymentMethod } from '@/features/payments/services/paymentService'
@@ -198,12 +198,34 @@ export function SpecialistReferralsSection({ patientId, initialReferrals }: { pa
                   </div>
                 )}
                 {ref.status === 'ADVANCE_PAID' && (
-                  <Link 
-                    href={`/dashboard/appointments/new?patientId=${patientId}&specialist_referral_id=${ref.id}&specialist_name=${encodeURIComponent(ref.specialist_name)}`}
-                    className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500"
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={async () => {
+                        await updateSpecialistReferralStatus(ref.id, 'SCHEDULED', patientId)
+                        window.location.reload()
+                      }}
+                      className="inline-flex items-center rounded-md bg-white border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+                    >
+                      Mark Scheduled
+                    </button>
+                    <Link 
+                      href={`/dashboard/appointments/new?patientId=${patientId}&specialist_referral_id=${ref.id}&specialist_name=${encodeURIComponent(ref.specialist_name)}`}
+                      className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500"
+                    >
+                      Schedule Appointment
+                    </Link>
+                  </div>
+                )}
+                {ref.status === 'SCHEDULED' && (
+                  <button 
+                    onClick={async () => {
+                      await updateSpecialistReferralStatus(ref.id, 'COMPLETED', patientId)
+                      window.location.reload()
+                    }}
+                    className="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-green-500"
                   >
-                    Schedule Appointment
-                  </Link>
+                    Mark Completed
+                  </button>
                 )}
               </div>
             </li>
