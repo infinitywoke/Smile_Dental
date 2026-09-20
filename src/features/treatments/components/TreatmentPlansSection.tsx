@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Check, Play, Trash2, X } from 'lucide-react'
+import { Plus, Check, Play, Trash2, X, Circle, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { TreatmentPlanWithItems, TreatmentStatus } from '../services/treatmentService'
 import { createTreatmentPlan, createTreatmentItem, updateTreatmentItemStatus, deleteTreatmentItem, updateTreatmentPlanStatus } from '../actions/treatmentActions'
 import { treatments } from '@/config/site'
@@ -47,7 +47,6 @@ export function TreatmentPlansSection({ patientId, initialPlans }: { patientId: 
     const cost = estimatedCost ? parseFloat(estimatedCost) : undefined
     const res = await createTreatmentItem(planId, patientId, procedure, toothNumber, cost, notes)
     if (!res.error) {
-      // Reload plans (in a real app, use SWR or router.refresh, but we can optimistically update)
       const newItem = {
         id: res.data!.id,
         treatment_plan_id: planId,
@@ -70,202 +69,166 @@ export function TreatmentPlansSection({ patientId, initialPlans }: { patientId: 
   }
 
   const handleStatusUpdate = async (planId: string, itemId: string, status: TreatmentStatus) => {
-    setLoading(true)
-    const res = await updateTreatmentItemStatus(itemId, planId, patientId, status)
-    if (!res.error) {
-      setPlans(plans.map(p => {
-        if (p.id === planId) {
-          return {
-            ...p,
-            treatment_items: p.treatment_items.map(i => i.id === itemId ? { ...i, status } : i)
-          }
+    // Optimistic update
+    setPlans(plans.map(p => {
+      if (p.id === planId) {
+        return {
+          ...p,
+          treatment_items: p.treatment_items.map(i => i.id === itemId ? { ...i, status } : i)
         }
-        return p
-      }))
-    }
-    setLoading(false)
+      }
+      return p
+    }))
+    
+    await updateTreatmentItemStatus(itemId, planId, patientId, status)
   }
 
   const handleDeleteItem = async (planId: string, itemId: string) => {
-    setLoading(true)
-    const res = await deleteTreatmentItem(itemId, planId, patientId)
-    if (!res.error) {
-      setPlans(plans.map(p => {
-        if (p.id === planId) {
-          return {
-            ...p,
-            treatment_items: p.treatment_items.filter(i => i.id !== itemId)
-          }
+    if (!confirm('Are you sure you want to delete this treatment item?')) return
+    setPlans(plans.map(p => {
+      if (p.id === planId) {
+        return {
+          ...p,
+          treatment_items: p.treatment_items.filter(i => i.id !== itemId)
         }
-        return p
-      }))
-    }
-    setLoading(false)
+      }
+      return p
+    }))
+    await deleteTreatmentItem(itemId, planId, patientId)
   }
 
-  const handleCompletePlan = async (planId: string) => {
-    setLoading(true)
-    const res = await updateTreatmentPlanStatus(planId, 'COMPLETED', patientId)
-    if (!res.error) {
-      setPlans(plans.map(p => p.id === planId ? { ...p, status: 'COMPLETED' } : p))
-    }
-    setLoading(false)
+  const handleUpdatePlanStatus = async (planId: string, status: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED') => {
+    setPlans(plans.map(p => p.id === planId ? { ...p, status } : p))
+    await updateTreatmentPlanStatus(planId, status, patientId)
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-medium leading-6 text-gray-900">Treatment Plans</h2>
-        {!isCreatingPlan && (
+        {isCreatingPlan ? (
+          <div className="flex w-full items-center gap-2">
+            <input
+              type="text"
+              value={newPlanName}
+              onChange={e => setNewPlanName(e.target.value)}
+              placeholder="e.g. Root Canal Treatment #46"
+              className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+              autoFocus
+            />
+            <button
+              onClick={handleCreatePlan}
+              disabled={loading || !newPlanName.trim()}
+              className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50 shrink-0"
+            >
+              <Check className="h-4 w-4" /> Save
+            </button>
+            <button
+              onClick={() => setIsCreatingPlan(false)}
+              className="inline-flex items-center gap-1 rounded bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
           <button
             onClick={() => setIsCreatingPlan(true)}
-            className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-500"
+            className="inline-flex items-center gap-1 rounded-md bg-white px-3 py-2 text-sm font-semibold text-blue-600 shadow-sm ring-1 ring-inset ring-blue-300 hover:bg-blue-50 w-full justify-center border-dashed border border-blue-400"
           >
-            <Plus className="h-4 w-4" /> Create Plan
+            <Plus className="h-4 w-4" /> Create New Treatment Plan
           </button>
         )}
       </div>
 
-      {isCreatingPlan && (
-        <div className="bg-blue-50 p-4 rounded-md border border-blue-100 flex gap-2 items-center mb-4">
-          <input
-            type="text"
-            placeholder="e.g. Full treatment plan - Sep 2026"
-            className="flex-1 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-            value={newPlanName}
-            onChange={e => setNewPlanName(e.target.value)}
-            disabled={loading}
-          />
-          <button
-            onClick={handleCreatePlan}
-            disabled={loading || !newPlanName.trim()}
-            className="inline-flex items-center rounded bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
-          >
-            Save
-          </button>
-          <button
-            onClick={() => setIsCreatingPlan(false)}
-            disabled={loading}
-            className="inline-flex items-center rounded bg-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-800 hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-
       {plans.length === 0 ? (
-        <div className="bg-white shadow sm:rounded-lg border border-gray-200 p-6 text-center">
-          <p className="text-sm text-gray-500 mb-4">No treatment plans yet. Create one to organize recommended dental care.</p>
-          <button
-            onClick={() => setIsCreatingPlan(true)}
-            className="inline-flex items-center gap-1 rounded bg-blue-100 text-blue-700 px-3 py-1.5 text-sm font-semibold hover:bg-blue-200"
-          >
-            <Plus className="h-4 w-4" /> Create Treatment Plan
-          </button>
+        <div className="text-center py-8 text-gray-500 border border-gray-200 border-dashed rounded-lg bg-gray-50">
+          <p>No treatment plans recorded.</p>
         </div>
       ) : (
-        plans.map(plan => {
-          const totalEstimated = plan.treatment_items.reduce((sum, item) => sum + (Number(item.estimated_cost) || 0), 0)
-          const completedCount = plan.treatment_items.filter(i => i.status === 'COMPLETED').length
-          const totalCount = plan.treatment_items.length
-          const isCompleted = plan.status === 'COMPLETED'
+        <div className="space-y-6">
+          {plans.map(plan => {
+            const isCompleted = plan.status === 'COMPLETED'
+            const totalItems = plan.treatment_items.length
+            const completedItems = plan.treatment_items.filter(i => i.status === 'COMPLETED').length
+            const progress = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100)
 
-          return (
-            <div key={plan.id} className={`bg-white shadow sm:rounded-lg border overflow-hidden ${isCompleted ? 'border-gray-200 opacity-80' : 'border-blue-200'}`}>
-              <div className={`px-4 py-3 sm:px-6 flex flex-col sm:flex-row sm:justify-between sm:items-center border-b ${isCompleted ? 'bg-gray-50 border-gray-200' : 'bg-blue-50/50 border-blue-100'}`}>
-                <div>
-                  <h3 className="text-base font-semibold leading-6 text-gray-900 flex items-center gap-2">
-                    {plan.name}
-                    {isCompleted ? (
-                      <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                        Completed
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
-                        Active
-                      </span>
-                    )}
-                  </h3>
-                  <div className="mt-1 text-sm text-gray-500 flex items-center gap-4">
-                    <span>{completedCount} / {totalCount} items completed</span>
-                    {totalEstimated > 0 && (
-                      <span className="font-medium text-gray-900">Estimated Total: ₹{totalEstimated}</span>
-                    )}
+            return (
+              <div key={plan.id} className={`bg-white shadow-sm sm:rounded-lg border overflow-hidden ${isCompleted ? 'border-gray-200 opacity-80' : 'border-amber-200'}`}>
+                
+                {/* PLAN HEADER */}
+                <div className={`px-4 py-4 sm:px-6 flex flex-col border-b ${isCompleted ? 'bg-gray-50 border-gray-200' : 'bg-amber-50/30 border-amber-100'}`}>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-bold leading-6 text-gray-900">{plan.name}</h3>
+                    <div className="flex gap-2">
+                      {!isCompleted && (
+                        <button onClick={() => handleUpdatePlanStatus(plan.id, 'COMPLETED')} className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded hover:bg-green-200">
+                          Mark Done
+                        </button>
+                      )}
+                      {isCompleted && (
+                        <button onClick={() => handleUpdatePlanStatus(plan.id, 'ACTIVE')} className="text-xs font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">
+                          Reopen
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* PROGRESS BAR */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className={`h-2.5 rounded-full ${progress === 100 ? 'bg-green-600' : 'bg-amber-500'}`} style={{ width: `${progress}%` }}></div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 whitespace-nowrap">{progress}%</span>
                   </div>
                 </div>
-                {!isCompleted && totalCount > 0 && completedCount === totalCount && (
-                  <button
-                    onClick={() => handleCompletePlan(plan.id)}
-                    className="mt-2 sm:mt-0 inline-flex items-center gap-1 rounded bg-green-100 px-3 py-1.5 text-sm font-semibold text-green-800 hover:bg-green-200"
-                  >
-                    <Check className="h-4 w-4" /> Mark Plan Complete
-                  </button>
-                )}
-              </div>
 
-              <ul className="divide-y divide-gray-200">
-                {plan.treatment_items.map(item => (
-                  <li key={item.id} className="p-4 sm:px-6 hover:bg-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-medium ${item.status === 'COMPLETED' ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                          {item.procedure}
-                        </span>
-                        {item.tooth_number && (
-                          <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-                            Tooth: {item.tooth_number}
+                {/* PLAN ITEMS (Checklist style) */}
+                <ul className="divide-y divide-gray-100">
+                  {plan.treatment_items.map(item => (
+                    <li key={item.id} className="p-3 sm:px-6 hover:bg-gray-50 flex items-center justify-between group transition-colors">
+                      <div className="flex items-center gap-3">
+                        {/* Interactive Status Icon */}
+                        <div className="shrink-0 cursor-pointer">
+                          {item.status === 'COMPLETED' ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" onClick={() => !isCompleted && handleStatusUpdate(plan.id, item.id, 'PLANNED')} />
+                          ) : item.status === 'IN_PROGRESS' ? (
+                            <ArrowRight className="h-5 w-5 text-blue-500" onClick={() => !isCompleted && handleStatusUpdate(plan.id, item.id, 'COMPLETED')} />
+                          ) : (
+                            <Circle className="h-5 w-5 text-gray-300 hover:text-blue-400" onClick={() => !isCompleted && handleStatusUpdate(plan.id, item.id, 'IN_PROGRESS')} />
+                          )}
+                        </div>
+
+                        {/* Item Details */}
+                        <div className="flex flex-col">
+                          <span className={`text-sm font-medium ${item.status === 'COMPLETED' ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                            {item.procedure} {item.tooth_number && <span className="text-gray-400 font-normal">| Tooth #{item.tooth_number}</span>}
                           </span>
-                        )}
+                          {item.notes && <span className="text-xs text-gray-500 mt-0.5">{item.notes}</span>}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
                         {item.estimated_cost && (
-                          <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                          <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
                             ₹{item.estimated_cost}
                           </span>
                         )}
-                      </div>
-                      {item.notes && <p className="mt-1 text-sm text-gray-500">{item.notes}</p>}
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {item.status === 'PLANNED' && !isCompleted && (
-                        <>
-                          <button onClick={() => handleStatusUpdate(plan.id, item.id, 'IN_PROGRESS')} className="inline-flex items-center gap-1 rounded bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20 hover:bg-yellow-100">
-                            <Play className="h-3 w-3" /> Start
-                          </button>
-                          <button onClick={() => handleStatusUpdate(plan.id, item.id, 'COMPLETED')} className="inline-flex items-center gap-1 rounded bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 hover:bg-green-100">
-                            <Check className="h-3 w-3" /> Complete
-                          </button>
-                          <button onClick={() => handleDeleteItem(plan.id, item.id)} className="text-gray-400 hover:text-red-600 p-1">
+                        {!isCompleted && (
+                          <button onClick={() => handleDeleteItem(plan.id, item.id)} className="text-gray-400 hover:text-red-600">
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        </>
-                      )}
-                      {item.status === 'IN_PROGRESS' && !isCompleted && (
-                        <>
-                          <span className="inline-flex items-center gap-1 rounded bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
-                            In Progress
-                          </span>
-                          <button onClick={() => handleStatusUpdate(plan.id, item.id, 'COMPLETED')} className="inline-flex items-center gap-1 rounded bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 hover:bg-green-100">
-                            <Check className="h-3 w-3" /> Complete
-                          </button>
-                        </>
-                      )}
-                      {item.status === 'COMPLETED' && (
-                        <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-                          Completed
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                ))}
+                        )}
+                      </div>
+                    </li>
+                  ))}
 
-                {!isCompleted && addingToPlanId === plan.id && (
-                  <li className="p-4 sm:px-6 bg-gray-50">
+                  {/* ADD ITEM FORM */}
+                  {!isCompleted && addingToPlanId === plan.id && (
+                    <li className="p-4 sm:px-6 bg-blue-50/30 border-t border-blue-100">
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 items-end">
                         <div className="sm:col-span-2">
                           <label className="block text-xs font-medium text-gray-700">Procedure</label>
                           <input type="text" list="procedures-list" value={procedure} onChange={e => {
                             setProcedure(e.target.value)
-                            // Auto-fill cost if a standard procedure is selected
                             const selectedOption = document.querySelector(`datalist#procedures-list option[value="${e.target.value}"]`) as HTMLOptionElement;
                             if (selectedOption && selectedOption.dataset.cost) {
                               setEstimatedCost(selectedOption.dataset.cost.replace(/[^0-9]/g, ''))
@@ -282,36 +245,38 @@ export function TreatmentPlansSection({ patientId, initialPlans }: { patientId: 
                           </datalist>
                         </div>
                         <div>
-                        <label className="block text-xs font-medium text-gray-700">Tooth (Optional)</label>
-                        <input type="text" value={toothNumber} onChange={e => setToothNumber(e.target.value)} className="mt-1 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" placeholder="e.g. 46" />
+                          <label className="block text-xs font-medium text-gray-700">Tooth (Opt)</label>
+                          <input type="text" value={toothNumber} onChange={e => setToothNumber(e.target.value)} className="mt-1 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" placeholder="e.g. 46" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700">Est. Fee (₹)</label>
+                          <input type="number" value={estimatedCost} onChange={e => setEstimatedCost(e.target.value)} className="mt-1 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" placeholder="0" />
+                        </div>
+                        <div className="sm:col-span-4 flex gap-2 pt-2">
+                          <button onClick={() => handleCreateItem(plan.id)} disabled={loading || !procedure.trim()} className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-500">
+                            <Plus className="h-4 w-4" /> Add Treatment
+                          </button>
+                          <button onClick={() => setAddingToPlanId(null)} className="inline-flex items-center gap-1 rounded bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                            Cancel
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700">Est. Fee (₹)</label>
-                        <input type="number" value={estimatedCost} onChange={e => setEstimatedCost(e.target.value)} className="mt-1 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" placeholder="0" />
-                      </div>
-                      <div className="sm:col-span-4 flex gap-2">
-                        <button onClick={() => handleCreateItem(plan.id)} disabled={loading || !procedure.trim()} className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-500">
-                          <Plus className="h-4 w-4" /> Add Treatment
-                        </button>
-                        <button onClick={() => setAddingToPlanId(null)} className="inline-flex items-center gap-1 rounded bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                )}
+                    </li>
+                  )}
 
-                {!isCompleted && addingToPlanId !== plan.id && (
-                  <li className="p-4 sm:px-6 bg-gray-50">
-                    <button onClick={() => setAddingToPlanId(plan.id)} className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-500">
-                      <Plus className="h-4 w-4" /> Add Treatment Item
-                    </button>
-                  </li>
-                )}
-              </ul>
-            </div>
-          )
-        })
+                  {/* ADD ITEM TRIGGER */}
+                  {!isCompleted && addingToPlanId !== plan.id && (
+                    <li className="p-3 sm:px-6 bg-gray-50/50 hover:bg-gray-100 transition-colors cursor-pointer border-t border-gray-100" onClick={() => setAddingToPlanId(plan.id)}>
+                      <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
+                        <Plus className="h-4 w-4" /> Add Step
+                      </div>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )

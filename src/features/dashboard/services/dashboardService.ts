@@ -76,3 +76,39 @@ export async function getDashboardData() {
     upcomingAppointments: (upcomingAppointments || []) as unknown as Appointment[],
   }
 }
+
+export async function getOpenLoops() {
+  const supabase = await createClient()
+
+  // Active Treatments
+  const { data: activeTreatments } = await supabase
+    .from('treatment_plans')
+    .select(`
+      id,
+      name,
+      patient_id,
+      patients (name)
+    `)
+    .eq('status', 'ACTIVE')
+    .order('updated_at', { ascending: false })
+    .limit(20)
+
+  // Pending Referrals
+  const { data: pendingReferrals } = await supabase
+    .from('specialist_referrals')
+    .select(`
+      id,
+      specialist_name,
+      patient_id,
+      status,
+      patients (name)
+    `)
+    .in('status', ['PENDING_ADVANCE', 'ADVANCE_PAID'])
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  return {
+    activeTreatments: activeTreatments || [],
+    pendingReferrals: pendingReferrals || []
+  }
+}
