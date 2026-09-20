@@ -112,19 +112,21 @@ export function computePatientActions(
   // 4. COORDINATION: REVIEW REFERRAL
   if (referrals) {
     for (const ref of referrals) {
-      actions.push({
-        id: `ref_${ref.id}`,
-        patientId,
-        patientName,
-        type: 'REVIEW_REFERRAL',
-        source: 'REFERRAL',
-        category: 'COORDINATION',
-        priority: 'HIGH',
-        title: 'Specialist Referral Pending',
-        description: `Referral to ${ref.specialist_name || 'specialist'} requires attention.`,
-        actionUrl: `/dashboard/patients/${patientId}#referrals`,
-        timestamp: ref.created_at
-      })
+      if (ref.status === 'PENDING_ADVANCE' || ref.status === 'ADVANCE_PAID') {
+        actions.push({
+          id: `ref_${ref.id}`,
+          patientId,
+          patientName,
+          type: 'REVIEW_REFERRAL',
+          source: 'REFERRAL',
+          category: 'COORDINATION',
+          priority: 'HIGH',
+          title: 'Specialist Referral Pending',
+          description: `Referral to ${ref.specialist_name || 'specialist'} requires attention.`,
+          actionUrl: `/dashboard/patients/${patientId}#referrals`,
+          timestamp: ref.created_at
+        })
+      }
     }
   }
 
