@@ -8,14 +8,12 @@ import { cn } from '@/lib/utils'
 import { siteConfig } from '@/config/site'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Today', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Patients', href: '/dashboard/patients', icon: Users },
-  { name: 'Booking Requests', href: '/dashboard/requests', icon: Inbox },
-  { name: 'Appointments', href: '/dashboard/appointments', icon: Calendar },
-  { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'Treatment Plans', href: '/dashboard/treatments', icon: ClipboardList },
-  { name: 'Historical Data', href: '/dashboard/migration', icon: Database },
+  { name: 'Calendar', href: '/dashboard/appointments', icon: Calendar },
+  { name: 'Treatment', href: '/dashboard/treatments', icon: ClipboardList },
+  { name: 'Money', href: '/dashboard/payments', icon: CreditCard },
+  { name: 'Insights', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
@@ -33,12 +31,23 @@ export function Sidebar({ onMobileNavigate }: { onMobileNavigate?: () => void })
             className="object-contain"
           />
         </div>
-        <span className="text-lg font-bold text-blue-900 tracking-tight truncate">Smile Dental Clinic</span>
+        <span className="text-lg font-bold text-blue-900 tracking-tight truncate">Clinic OS</span>
       </div>
+      
+      <div className="p-4 border-b">
+        <Link
+          href="/dashboard/walk-in"
+          onClick={onMobileNavigate}
+          className="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors"
+        >
+          <span className="text-lg font-bold tracking-wider">WALK-IN</span>
+        </Link>
+      </div>
+
       <div className="flex flex-1 flex-col overflow-y-auto">
         <nav className="flex-1 space-y-1 px-4 py-4">
           {navigation.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
             return (
               <Link
                 key={item.name}
