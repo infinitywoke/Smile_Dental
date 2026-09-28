@@ -1,5 +1,6 @@
 import { getDashboardData } from '@/features/dashboard/services/dashboardService'
 import { getTodayActions } from '@/features/actions/services/nextActionEngine'
+import { ClinicAction } from '@/lib/types/actions'
 import { format, parseISO } from 'date-fns'
 import Link from 'next/link'
 import { Phone, Clock, ArrowRight, UserPlus, FileText, AlertCircle } from 'lucide-react'
@@ -178,7 +179,7 @@ export default async function DashboardPage() {
         <div className="space-y-8">
           
           {/* ACTION CENTER SECTION */}
-          <section>
+          <section role="region" aria-label="Global Action Center">
             <h2 className="text-sm font-bold uppercase tracking-wider text-red-600 mb-3 flex items-center justify-between">
               <span>Needs Attention</span>
               {todayActions.length > 0 && (
@@ -191,34 +192,70 @@ export default async function DashboardPage() {
                 <div className="p-6 text-center text-sm text-gray-500">All caught up!</div>
               ) : (
                 <ul role="list" className="divide-y divide-gray-100">
-                  {todayActions.map((action) => {
-                    let badgeClass = "bg-gray-100 text-gray-700 border-gray-200"
-                    if (action.priority === 'URGENT') badgeClass = "bg-red-50 text-red-700 border-red-200"
-                    else if (action.priority === 'HIGH') badgeClass = "bg-purple-50 text-purple-700 border-purple-200"
-                    else if (action.priority === 'NORMAL') badgeClass = "bg-amber-50 text-amber-700 border-amber-200"
+                  {(() => {
+                    // Group actions by patient while preserving overall priority order
+                    const patientGroups: Record<string, ClinicAction[]> = {}
+                    const orderedPatientKeys: string[] = []
 
-                    return (
-                      <li key={action.id} className="p-4 flex flex-col gap-2 hover:bg-gray-50 group">
-                        <div className="flex justify-between items-start">
-                          <span className="text-sm font-semibold text-gray-900">{action.patientName}</span>
-                          <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${badgeClass}`}>
-                            {action.priority}
-                          </span>
-                        </div>
-                        <span className="text-xs font-medium text-gray-800">{action.title}</span>
-                        <span className="text-xs text-gray-600 mt-0.5 line-clamp-2">{action.description}</span>
-                        
-                        <div className="flex justify-between items-end mt-1">
-                          <span className="text-[10px] text-gray-400">
-                            {format(parseISO(action.timestamp), 'MMM d')}
-                          </span>
-                          <Link href={action.actionUrl} className="text-xs text-blue-600 font-medium hover:text-blue-500 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            RESOLVE <ArrowRight className="h-3 w-3 ml-1" />
-                          </Link>
-                        </div>
-                      </li>
-                    )
-                  })}
+                    todayActions.forEach(action => {
+                      const key = action.patientId || `web_req_${action.id}` // Use action ID for unassigned web requests
+                      if (!patientGroups[key]) {
+                        patientGroups[key] = []
+                        orderedPatientKeys.push(key)
+                      }
+                      patientGroups[key].push(action)
+                    })
+
+                    return orderedPatientKeys.map((patientKey) => {
+                      const patientActions = patientGroups[patientKey]
+                      const primaryAction = patientActions[0]
+
+                      let badgeClass = "bg-gray-100 text-gray-700 border-gray-200"
+                      if (primaryAction.priority === 'URGENT') badgeClass = "bg-red-50 text-red-700 border-red-200"
+                      else if (primaryAction.priority === 'HIGH') badgeClass = "bg-purple-50 text-purple-700 border-purple-200"
+                      else if (primaryAction.priority === 'NORMAL') badgeClass = "bg-amber-50 text-amber-700 border-amber-200"
+
+                      return (
+                        <li key={patientKey} className="p-4 flex flex-col gap-3 hover:bg-gray-50 group">
+                          <div className="flex justify-between items-start">
+                            <span className="text-sm font-bold text-gray-900">
+                              {primaryAction.patientName}
+                              {patientActions.length > 1 && (
+                                <span className="text-xs font-normal text-gray-500 ml-1">({patientActions.length} items)</span>
+                              )}
+                            </span>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${badgeClass}`}>
+                              <span className="sr-only">Priority: </span>{primaryAction.priority}
+                            </span>
+                          </div>
+
+                          <div className="space-y-3 pl-2 border-l-2 border-gray-100">
+                            {patientActions.map(action => (
+                              <div key={action.id} className="flex flex-col gap-1">
+                                <div className="flex justify-between items-start">
+                                  <span className="text-xs font-semibold text-gray-800">{action.title}</span>
+                                </div>
+                                <span className="text-xs text-gray-600 line-clamp-2">{action.description}</span>
+                                
+                                <div className="flex justify-between items-end mt-1">
+                                  <span className="text-[10px] text-gray-400 font-medium">
+                                    {format(parseISO(action.timestamp), 'MMM d')}
+                                  </span>
+                                  <Link 
+                                    href={action.actionUrl} 
+                                    className="text-[11px] text-blue-600 font-bold hover:text-blue-500 flex items-center transition-opacity"
+                                    aria-label={`Resolve action: ${action.title} for ${action.patientName}`}
+                                  >
+                                    RESOLVE <ArrowRight className="h-3 w-3 ml-1" />
+                                  </Link>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </li>
+                      )
+                    })
+                  })()}
                 </ul>
               )}
             </div>

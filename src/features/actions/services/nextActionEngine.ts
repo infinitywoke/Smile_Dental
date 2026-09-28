@@ -10,10 +10,6 @@ const priorityWeight: Record<ActionPriority, number> = {
 }
 
 /**
- * Deterministic rules engine to generate clinic actions for a given patient.
- * Uses targeted server-side queries.
- */
-/**
  * Pure deterministic rules engine to compute clinic actions from pre-fetched state.
  * Exposed for rigorous unit testing.
  */
@@ -23,8 +19,7 @@ export function computePatientActions(
   appointments: any[],
   treatmentPlans: any[],
   hasUpcomingAppointment: boolean,
-  payments: any[],
-  treatmentItems: any[],
+  balance: number,
   referrals: any[],
   clinicalRecords: any[],
   lastCompletedDate: string | null
@@ -35,6 +30,13 @@ export function computePatientActions(
   if (appointments) {
     for (const apt of appointments) {
       if (apt.status === 'IN_PROGRESS') {
+        // Calculate elapsed time if available
+        let elapsedStr = ''
+        if (apt.updated_at) {
+          const diffMins = Math.floor((Date.now() - new Date(apt.updated_at).getTime()) / 60000)
+          elapsedStr = diffMins > 0 ? ` (${diffMins}m elapsed)` : ''
+        }
+        
         actions.push({
           id: `apt_now_${apt.id}`,
           patientId,
@@ -44,11 +46,15 @@ export function computePatientActions(
           category: 'CLINICAL',
           priority: 'NOW',
           title: 'In Chair',
-          description: 'Consultation is currently in progress.',
-          actionUrl: `/dashboard/appointments/${apt.id}/consultation`,
-          timestamp: apt.updated_at
+          description: apt.reason ? `Consultation for ${apt.reason} in progress${elapsedStr}.` : `Consultation is currently in progress${elapsedStr}.`,
+          actionUrl: `/dashboard/appointments/${apt.id}/consultation?action=continue_encounter`,
+          timestamp: apt.updated_at,
+          appointmentId: apt.id,
+          reason: apt.reason,
+          scheduledAt: apt.scheduled_start
         })
       } else if (apt.status === 'CHECKED_IN') {
+        const timeStr = apt.scheduled_start ? new Date(apt.scheduled_start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''
         actions.push({
           id: `apt_wait_${apt.id}`,
           patientId,
@@ -58,19 +64,18 @@ export function computePatientActions(
           category: 'CLINICAL',
           priority: 'NOW',
           title: 'Waiting Room',
-          description: 'Patient is waiting to be seen.',
-          actionUrl: `/dashboard/appointments/${apt.id}/consultation`,
-          timestamp: apt.updated_at
+          description: apt.reason ? `Waiting for today's appointment (${apt.reason}) at ${timeStr}.` : `Patient is waiting to be seen.`,
+          actionUrl: `/dashboard/appointments/${apt.id}/consultation?action=start_encounter`,
+          timestamp: apt.updated_at,
+          appointmentId: apt.id,
+          reason: apt.reason,
+          scheduledAt: apt.scheduled_start
         })
       }
     }
   }
 
   // 2. FINANCIAL: OUTSTANDING BALANCE
-  let balance = 0
-  treatmentItems?.forEach(i => { balance += Number(i.estimated_cost) || 0 })
-  payments?.forEach(p => { balance -= Number(p.amount_paid) || 0 })
-  
   if (balance > 0) {
     actions.push({
       id: `bal_${patientId}`,
@@ -81,9 +86,10 @@ export function computePatientActions(
       category: 'FINANCIAL',
       priority: 'NORMAL',
       title: 'Outstanding Balance',
-      description: `₹${balance.toLocaleString()} remains unpaid.`,
+      description: `₹${balance.toLocaleString()} remains unpaid on account.`,
       actionUrl: `/dashboard/patients/${patientId}#payments`,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      amount: balance
     })
   }
 
@@ -92,6 +98,7 @@ export function computePatientActions(
     const notedAptIds = new Set(clinicalRecords.map(n => n.appointment_id))
     for (const apt of appointments) {
       if (apt.status === 'COMPLETED' && !notedAptIds.has(apt.id)) {
+        const dateStr = apt.scheduled_start ? new Date(apt.scheduled_start).toLocaleDateString() : 'recent'
         actions.push({
           id: `notes_${apt.id}`,
           patientId,
@@ -101,9 +108,12 @@ export function computePatientActions(
           category: 'CLINICAL',
           priority: 'HIGH',
           title: 'Missing Clinical Note',
-          description: 'A completed appointment lacks required documentation.',
-          actionUrl: `/dashboard/appointments/${apt.id}/consultation`,
-          timestamp: apt.updated_at
+          description: apt.reason ? `Requires documentation for ${dateStr} visit (${apt.reason}).` : `Completed appointment on ${dateStr} lacks required documentation.`,
+          actionUrl: `/dashboard/appointments/${apt.id}/consultation?action=complete_notes`,
+          timestamp: apt.updated_at,
+          appointmentId: apt.id,
+          reason: apt.reason,
+          scheduledAt: apt.scheduled_start
         })
       }
     }
@@ -113,6 +123,7 @@ export function computePatientActions(
   if (referrals) {
     for (const ref of referrals) {
       if (ref.status === 'PENDING_ADVANCE' || ref.status === 'ADVANCE_PAID') {
+        const refStatus = ref.status === 'PENDING_ADVANCE' ? 'Pending Advance' : 'Advance Paid'
         actions.push({
           id: `ref_${ref.id}`,
           patientId,
@@ -122,17 +133,38 @@ export function computePatientActions(
           category: 'COORDINATION',
           priority: 'HIGH',
           title: 'Specialist Referral Pending',
-          description: `Referral to ${ref.specialist_name || 'specialist'} requires attention.`,
+          description: ref.reason 
+            ? `Referral to ${ref.specialist_name || 'specialist'} for ${ref.reason} (${refStatus}).` 
+            : `Referral to ${ref.specialist_name || 'specialist'} requires attention (${refStatus}).`,
           actionUrl: `/dashboard/patients/${patientId}#referrals`,
-          timestamp: ref.created_at
+          timestamp: ref.created_at,
+          referralId: ref.id,
+          specialistName: ref.specialist_name,
+          reason: ref.reason
         })
       }
     }
   }
 
-  // 5. SCHEDULING: SCHEDULE FOLLOWUP
-  if (treatmentPlans && !hasUpcomingAppointment) {
-    for (const plan of treatmentPlans) {
+  // 5. SCHEDULING: SCHEDULE FOLLOW-UP
+  if (treatmentPlans) {
+    const activePlans = treatmentPlans.filter(p => p.status === 'ACTIVE')
+    if (activePlans.length > 0 && !hasUpcomingAppointment) {
+      // Create ONE follow-up action even if multiple plans exist, to avoid duplication noise.
+      // Prioritize the plan that was most recently created or has the most pressing pending item.
+      const plan = activePlans[0] 
+      
+      let nextItem = null
+      if (plan.treatment_items) {
+        nextItem = plan.treatment_items.find((i: any) => i.status === 'PLANNED')
+      }
+
+      let desc = `${plan.name} is active but has no upcoming appointment.`
+      if (nextItem) {
+        const toothStr = nextItem.tooth_number ? ` · Tooth #${nextItem.tooth_number}` : ''
+        desc = `Schedule ${plan.name} follow-up${toothStr} · Next: ${nextItem.procedure}`
+      }
+
       actions.push({
         id: `plan_${plan.id}`,
         patientId,
@@ -142,41 +174,51 @@ export function computePatientActions(
         category: 'SCHEDULING',
         priority: 'NORMAL',
         title: 'Schedule Follow-up',
-        description: `${plan.name} is active but has no upcoming appointment.`,
-        actionUrl: `/dashboard/appointments/new?patientId=${patientId}`,
-        timestamp: plan.created_at
+        description: desc,
+        actionUrl: `/dashboard/appointments/new?patientId=${patientId}&action=schedule_followup&planId=${plan.id}`,
+        timestamp: plan.created_at,
+        treatmentPlanId: plan.id,
+        treatmentItemId: nextItem?.id,
+        tooth: nextItem?.tooth_number,
+        reason: nextItem?.procedure || plan.name
       })
     }
   }
 
-  // 6. SCHEDULING: SET RECALL
-  if (!hasUpcomingAppointment && (!treatmentPlans || treatmentPlans.length === 0) && lastCompletedDate) {
-    // Check if more than 6 months have passed since last completed appt
-    const sixMonthsAgo = new Date()
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-    
-    if (new Date(lastCompletedDate) < sixMonthsAgo) {
-      actions.push({
-        id: `recall_${patientId}`,
-        patientId,
-        patientName,
-        type: 'SET_RECALL',
-        source: 'RECALL',
-        category: 'SCHEDULING',
-        priority: 'LOW',
-        title: 'Routine Recall',
-        description: 'Patient is due for a routine 6-month checkup.',
-        actionUrl: `/dashboard/appointments/new?patientId=${patientId}`,
-        timestamp: new Date().toISOString()
-      })
+  // 6. SCHEDULING: SET RECALL (Routine Checkup)
+  // Only trigger if no active plans, no future appointments, and > 6 months since last completed
+  if (!hasUpcomingAppointment && (!treatmentPlans || treatmentPlans.filter(p => p.status === 'ACTIVE').length === 0)) {
+    if (lastCompletedDate) {
+      const lastDate = new Date(lastCompletedDate)
+      const sixMonthsAgo = new Date()
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+      
+      if (lastDate < sixMonthsAgo) {
+        const diffMonths = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24 * 30))
+        actions.push({
+          id: `recall_${patientId}`,
+          patientId,
+          patientName,
+          type: 'SET_RECALL',
+          source: 'RECALL',
+          category: 'SCHEDULING',
+          priority: 'LOW',
+          title: 'Routine Recall',
+          description: `Routine recall · Last visit ${diffMonths} months ago.`,
+          actionUrl: `/dashboard/appointments/new?patientId=${patientId}&action=set_recall`,
+          timestamp: lastCompletedDate,
+          scheduledAt: lastCompletedDate
+        })
+      }
     }
   }
 
+  // Sort logically for Patient Command Centre (prioritizes High urgency + older items)
   actions.sort((a, b) => {
     if (priorityWeight[a.priority] !== priorityWeight[b.priority]) {
       return priorityWeight[a.priority] - priorityWeight[b.priority]
     }
-    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   })
 
   return actions
@@ -193,19 +235,22 @@ export async function getPatientActions(patientId: string): Promise<ClinicAction
     aptsRes,
     plansRes,
     futureAptsRes,
-    paymentsRes,
-    itemsRes,
+    balanceRes,
     refsRes,
     recentNotesRes,
     lastCompletedApptRes
   ] = await Promise.all([
     supabase.from('patients').select('name').eq('id', patientId).single(),
-    supabase.from('appointments').select('id, status, updated_at').eq('patient_id', patientId).in('status', ['CHECKED_IN', 'IN_PROGRESS', 'COMPLETED']).order('updated_at', { ascending: false }).limit(5),
-    supabase.from('treatment_plans').select('id, name, created_at').eq('patient_id', patientId).eq('status', 'ACTIVE'),
+    supabase.from('appointments').select('id, status, updated_at, reason, scheduled_start').eq('patient_id', patientId).in('status', ['CHECKED_IN', 'IN_PROGRESS', 'COMPLETED']).order('updated_at', { ascending: false }).limit(5),
+    supabase.from('treatment_plans').select(`
+      id, name, created_at, status,
+      treatment_items (
+        id, procedure, tooth_number, status, estimated_cost
+      )
+    `).eq('patient_id', patientId),
     supabase.from('appointments').select('id').eq('patient_id', patientId).in('status', ['SCHEDULED', 'CONFIRMED']).gt('scheduled_start', new Date().toISOString()),
-    supabase.from('payments').select('amount_paid').eq('patient_id', patientId),
-    supabase.from('treatment_items').select('estimated_cost').eq('patient_id', patientId).neq('status', 'CANCELLED'),
-    supabase.from('specialist_referrals').select('id, status, created_at, specialist_name').eq('patient_id', patientId).in('status', ['PENDING_ADVANCE', 'ADVANCE_PAID']),
+    supabase.from('patient_financial_balances').select('balance').eq('patient_id', patientId).single(),
+    supabase.from('specialist_referrals').select('id, status, created_at, specialist_name, reason').eq('patient_id', patientId).in('status', ['PENDING_ADVANCE', 'ADVANCE_PAID']),
     supabase.from('clinical_records').select('appointment_id').eq('patient_id', patientId),
     supabase.from('appointments').select('scheduled_start').eq('patient_id', patientId).eq('status', 'COMPLETED').order('scheduled_start', { ascending: false }).limit(1)
   ])
@@ -214,6 +259,8 @@ export async function getPatientActions(patientId: string): Promise<ClinicAction
   if (lastCompletedApptRes.data && lastCompletedApptRes.data.length > 0) {
     lastCompletedDate = lastCompletedApptRes.data[0].scheduled_start
   }
+  
+  const balance = balanceRes.data?.balance || 0
 
   return computePatientActions(
     patientId,
@@ -221,8 +268,7 @@ export async function getPatientActions(patientId: string): Promise<ClinicAction
     aptsRes.data || [],
     plansRes.data || [],
     !!futureAptsRes.data && futureAptsRes.data.length > 0,
-    paymentsRes.data || [],
-    itemsRes.data || [],
+    balance,
     refsRes.data || [],
     recentNotesRes.data || [],
     lastCompletedDate
@@ -251,22 +297,20 @@ export async function getClinicWideActions(): Promise<ClinicAction[]> {
         category: 'SCHEDULING',
         priority: 'URGENT',
         title: 'New Booking Request',
-        description: req.reason || 'Patient requested an appointment online.',
+        description: req.reason ? `Reason: ${req.reason}` : 'Patient requested an appointment online.',
         actionUrl: `/dashboard/requests`,
-        timestamp: req.created_at
+        timestamp: req.created_at,
+        bookingRequestId: req.id,
+        reason: req.reason
       })
     }
   }
 
-  // For clinic-wide Unresolved Work, we need to gather all patients who have open loops.
-  // Instead of fetching everything, we perform targeted queries for the specific states.
-  
   // A. Missing Notes (Completed appts in the last 7 days without a clinical record)
-  // Since we don't have a complex join for missing notes, we can fetch recent completed appts and recent notes
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
   const [recentApts, recentNotes] = await Promise.all([
-    supabase.from('appointments').select('id, patient_id, updated_at, patients(name)').eq('status', 'COMPLETED').gt('updated_at', sevenDaysAgo.toISOString()),
+    supabase.from('appointments').select('id, patient_id, updated_at, reason, scheduled_start, patients(name)').eq('status', 'COMPLETED').gt('updated_at', sevenDaysAgo.toISOString()),
     supabase.from('clinical_records').select('appointment_id').gt('created_at', sevenDaysAgo.toISOString())
   ])
 
@@ -274,6 +318,7 @@ export async function getClinicWideActions(): Promise<ClinicAction[]> {
     const notedAptIds = new Set(recentNotes.data.map(n => n.appointment_id))
     for (const apt of recentApts.data) {
       if (!notedAptIds.has(apt.id)) {
+        const dateStr = apt.scheduled_start ? new Date(apt.scheduled_start).toLocaleDateString() : 'recent'
         actions.push({
           id: `notes_${apt.id}`,
           patientId: apt.patient_id,
@@ -283,18 +328,22 @@ export async function getClinicWideActions(): Promise<ClinicAction[]> {
           category: 'CLINICAL',
           priority: 'HIGH',
           title: 'Missing Clinical Note',
-          description: 'A recent completed appointment lacks required documentation.',
-          actionUrl: `/dashboard/appointments/${apt.id}/consultation`,
-          timestamp: apt.updated_at
+          description: apt.reason ? `Requires documentation for ${dateStr} visit (${apt.reason}).` : `Completed appointment on ${dateStr} lacks required documentation.`,
+          actionUrl: `/dashboard/appointments/${apt.id}/consultation?action=complete_notes`,
+          timestamp: apt.updated_at,
+          appointmentId: apt.id,
+          reason: apt.reason,
+          scheduledAt: apt.scheduled_start
         })
       }
     }
   }
 
   // B. Pending Referrals
-  const { data: referrals } = await supabase.from('specialist_referrals').select('id, patient_id, status, created_at, specialist_name, patients(name)').in('status', ['PENDING_ADVANCE', 'ADVANCE_PAID'])
+  const { data: referrals } = await supabase.from('specialist_referrals').select('id, patient_id, status, created_at, specialist_name, reason, patients(name)').in('status', ['PENDING_ADVANCE', 'ADVANCE_PAID'])
   if (referrals) {
     for (const ref of referrals) {
+      const refStatus = ref.status === 'PENDING_ADVANCE' ? 'Pending Advance' : 'Advance Paid'
       actions.push({
         id: `ref_${ref.id}`,
         patientId: ref.patient_id,
@@ -304,22 +353,49 @@ export async function getClinicWideActions(): Promise<ClinicAction[]> {
         category: 'COORDINATION',
         priority: 'HIGH',
         title: 'Specialist Referral Pending',
-        description: `Referral to ${ref.specialist_name || 'specialist'} requires attention.`,
+        description: ref.reason 
+            ? `Referral to ${ref.specialist_name || 'specialist'} for ${ref.reason} (${refStatus}).` 
+            : `Referral to ${ref.specialist_name || 'specialist'} requires attention (${refStatus}).`,
         actionUrl: `/dashboard/patients/${ref.patient_id}#referrals`,
-        timestamp: ref.created_at
+        timestamp: ref.created_at,
+        referralId: ref.id,
+        specialistName: ref.specialist_name,
+        reason: ref.reason
       })
     }
   }
 
   // C. Active Treatments without future appointments
-  const { data: activePlans } = await supabase.from('treatment_plans').select('id, patient_id, name, created_at, patients(name)').eq('status', 'ACTIVE')
+  const { data: activePlans } = await supabase.from('treatment_plans').select(`
+    id, patient_id, name, created_at, 
+    patients(name),
+    treatment_items(id, procedure, tooth_number, status)
+  `).eq('status', 'ACTIVE')
+  
   if (activePlans && activePlans.length > 0) {
     const activePatientIds = activePlans.map(p => p.patient_id)
     const { data: futureApts } = await supabase.from('appointments').select('patient_id').in('patient_id', activePatientIds).in('status', ['SCHEDULED', 'CONFIRMED']).gt('scheduled_start', new Date().toISOString())
     
     const hasUpcoming = new Set(futureApts?.map(a => a.patient_id) || [])
+    
+    // Deduplicate so a single patient only gets ONE follow-up action even if they have 3 active plans
+    const handledPatients = new Set<string>()
+
     for (const plan of activePlans) {
-      if (!hasUpcoming.has(plan.patient_id)) {
+      if (!hasUpcoming.has(plan.patient_id) && !handledPatients.has(plan.patient_id)) {
+        handledPatients.add(plan.patient_id)
+        
+        let nextItem = null
+        if (plan.treatment_items) {
+          nextItem = (plan.treatment_items as any[]).find((i: any) => i.status === 'PLANNED')
+        }
+
+        let desc = `${plan.name} is active but has no upcoming appointment.`
+        if (nextItem) {
+          const toothStr = nextItem.tooth_number ? ` · Tooth #${nextItem.tooth_number}` : ''
+          desc = `Schedule ${plan.name} follow-up${toothStr} · Next: ${nextItem.procedure}`
+        }
+
         actions.push({
           id: `plan_${plan.id}`,
           patientId: plan.patient_id,
@@ -329,58 +405,49 @@ export async function getClinicWideActions(): Promise<ClinicAction[]> {
           category: 'SCHEDULING',
           priority: 'NORMAL',
           title: 'Schedule Follow-up',
-          description: `${plan.name} is active but has no upcoming appointment.`,
-          actionUrl: `/dashboard/appointments/new?patientId=${plan.patient_id}`,
-          timestamp: plan.created_at
+          description: desc,
+          actionUrl: `/dashboard/appointments/new?patientId=${plan.patient_id}&action=schedule_followup&planId=${plan.id}`,
+          timestamp: plan.created_at,
+          treatmentPlanId: plan.id,
+          treatmentItemId: nextItem?.id,
+          tooth: nextItem?.tooth_number,
+          reason: nextItem?.procedure || plan.name
         })
       }
     }
   }
 
-  // D. Outstanding Balances
-  const [allPayments, allItems, patientsRes] = await Promise.all([
-    supabase.from('payments').select('patient_id, amount_paid'),
-    supabase.from('treatment_items').select('patient_id, estimated_cost').neq('status', 'CANCELLED'),
-    supabase.from('patients').select('id, name')
-  ])
+  // D. Outstanding Balances (Uses Phase 5.1 DB View)
+  const { data: balanceData } = await supabase
+    .from('patient_financial_balances')
+    .select('patient_id, patient_name, balance')
+    .gt('balance', 0)
 
-  const balances: Record<string, number> = {}
-  allItems.data?.forEach(i => {
-    if (i.patient_id && i.estimated_cost) {
-      balances[i.patient_id] = (balances[i.patient_id] || 0) + Number(i.estimated_cost)
-    }
-  })
-  allPayments.data?.forEach(p => {
-    if (p.patient_id && p.amount_paid) {
-      balances[p.patient_id] = (balances[p.patient_id] || 0) - Number(p.amount_paid)
-    }
-  })
-
-  const patientMap = new Map((patientsRes.data || []).map(p => [p.id, p.name]))
-
-  for (const [patientId, balance] of Object.entries(balances)) {
-    if (balance > 0) {
+  if (balanceData) {
+    for (const b of balanceData) {
       actions.push({
-        id: `bal_${patientId}`,
-        patientId,
-        patientName: patientMap.get(patientId) || 'Unknown',
+        id: `bal_${b.patient_id}`,
+        patientId: b.patient_id,
+        patientName: b.patient_name || 'Unknown',
         type: 'COLLECT_PAYMENT',
         source: 'PAYMENT',
         category: 'FINANCIAL',
         priority: 'NORMAL',
         title: 'Outstanding Balance',
-        description: `₹${balance.toLocaleString()} remains unpaid.`,
-        actionUrl: `/dashboard/patients/${patientId}#payments`,
-        timestamp: new Date().toISOString()
+        description: `₹${b.balance.toLocaleString()} remains unpaid on account.`,
+        actionUrl: `/dashboard/patients/${b.patient_id}#payments`,
+        timestamp: new Date().toISOString(),
+        amount: b.balance
       })
     }
   }
 
+  // Sort globally by priority then timestamp
   actions.sort((a, b) => {
     if (priorityWeight[a.priority] !== priorityWeight[b.priority]) {
       return priorityWeight[a.priority] - priorityWeight[b.priority]
     }
-    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime() // Older items first within same priority
   })
 
   return actions

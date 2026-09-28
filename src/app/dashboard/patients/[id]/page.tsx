@@ -13,7 +13,7 @@ import { getPatientSpecialistReferrals } from '@/features/treatments/actions/spe
 import { SpecialistReferralsSection } from '@/features/treatments/components/SpecialistReferralsSection'
 import { NextActionCard } from '@/features/patients/components/NextActionCard'
 import { PatientTimeline } from '@/features/patients/components/PatientTimeline'
-import { getPatientNextAction } from '@/features/actions/services/nextActionEngine'
+import { getPatientActions } from '@/features/actions/services/nextActionEngine'
 
 function computeAge(dob: string | null) {
   if (!dob) return null
@@ -47,7 +47,7 @@ export default async function PatientProfilePage({ params }: { params: Promise<{
   const latestAppointment = patient.appointments?.[0]
   const hasActiveTreatment = activePlans.length > 0
 
-  const nextAction = await getPatientNextAction(patient.id)
+  const actions = await getPatientActions(patient.id)
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -108,7 +108,7 @@ export default async function PatientProfilePage({ params }: { params: Promise<{
       </div>
 
       {/* 2. NEXT ACTION COMMAND */}
-      <NextActionCard action={nextAction} />
+      <NextActionCard actions={actions} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* LEFT COLUMN: TIMELINE */}

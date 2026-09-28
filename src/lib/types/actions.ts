@@ -41,4 +41,16 @@ export interface ClinicAction {
   description: string
   actionUrl: string
   timestamp: string
+
+  // Phase 5.2 Structured Context
+  appointmentId?: string
+  treatmentPlanId?: string
+  treatmentItemId?: string
+  referralId?: string
+  bookingRequestId?: string
+  amount?: number
+  scheduledAt?: string
+  tooth?: string
+  reason?: string
+  specialistName?: string
 }

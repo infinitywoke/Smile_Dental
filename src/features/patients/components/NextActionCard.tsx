@@ -1,17 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { AlertCircle, CreditCard, Stethoscope, Calendar, ArrowRight, Activity, Clock, FileText } from 'lucide-react'
+import { AlertCircle, CreditCard, Stethoscope, Calendar, ArrowRight, Activity, FileText } from 'lucide-react'
 import { ClinicAction } from '@/lib/types/actions'
 
 type NextActionCardProps = {
-  action: ClinicAction | null
+  actions: ClinicAction[]
 }
 
-export function NextActionCard({ action }: NextActionCardProps) {
-  if (!action) {
+export function NextActionCard({ actions }: NextActionCardProps) {
+  if (!actions || actions.length === 0) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between" role="region" aria-label="Action Center">
         <div className="flex items-center gap-3">
           <div className="bg-gray-200 p-2 rounded-full">
             <CheckCircle className="h-5 w-5 text-gray-600" />
@@ -25,100 +25,108 @@ export function NextActionCard({ action }: NextActionCardProps) {
     )
   }
 
-  let bgClass = "bg-gray-50 border-gray-200"
-  let iconBgClass = "bg-gray-100"
-  let iconClass = "text-gray-600"
-  let textTitleClass = "text-gray-900"
-  let textDescClass = "text-gray-700"
-  let btnClass = "bg-gray-600 hover:bg-gray-500"
-  let Icon = Calendar
-  let btnLabel = "RESOLVE"
+  const primaryAction = actions[0]
+  const secondaryActions = actions.slice(1)
 
-  switch (action.type) {
-    case 'START_ENCOUNTER':
-    case 'CONTINUE_ENCOUNTER':
-      bgClass = "bg-emerald-50 border-emerald-200"
-      iconBgClass = "bg-emerald-100"
-      iconClass = "text-emerald-600"
-      textTitleClass = "text-emerald-900"
-      textDescClass = "text-emerald-700"
-      btnClass = "bg-emerald-600 hover:bg-emerald-500"
-      Icon = Activity
-      btnLabel = "OPEN"
-      break
-    case 'COLLECT_PAYMENT':
-      bgClass = "bg-red-50 border-red-200"
-      iconBgClass = "bg-red-100"
-      iconClass = "text-red-600"
-      textTitleClass = "text-red-900"
-      textDescClass = "text-red-700"
-      btnClass = "bg-red-600 hover:bg-red-500"
-      Icon = CreditCard
-      btnLabel = "COLLECT"
-      break
-    case 'COMPLETE_NOTES':
-      bgClass = "bg-orange-50 border-orange-200"
-      iconBgClass = "bg-orange-100"
-      iconClass = "text-orange-600"
-      textTitleClass = "text-orange-900"
-      textDescClass = "text-orange-700"
-      btnClass = "bg-orange-600 hover:bg-orange-500"
-      Icon = FileText
-      btnLabel = "WRITE NOTES"
-      break
-    case 'REVIEW_REFERRAL':
-      bgClass = "bg-purple-50 border-purple-200"
-      iconBgClass = "bg-purple-100"
-      iconClass = "text-purple-600"
-      textTitleClass = "text-purple-900"
-      textDescClass = "text-purple-700"
-      btnClass = "bg-purple-600 hover:bg-purple-500"
-      Icon = AlertCircle
-      btnLabel = "REVIEW"
-      break
-    case 'SCHEDULE_FOLLOWUP':
-    case 'SET_RECALL':
-      bgClass = "bg-amber-50 border-amber-200"
-      iconBgClass = "bg-amber-100"
-      iconClass = "text-amber-600"
-      textTitleClass = "text-amber-900"
-      textDescClass = "text-amber-700"
-      btnClass = "bg-amber-600 hover:bg-amber-500"
-      Icon = Stethoscope
-      btnLabel = "SCHEDULE"
-      break
-    default:
-      bgClass = "bg-blue-50 border-blue-200"
-      iconBgClass = "bg-blue-100"
-      iconClass = "text-blue-600"
-      textTitleClass = "text-blue-900"
-      textDescClass = "text-blue-700"
-      btnClass = "bg-blue-600 hover:bg-blue-500"
-      Icon = AlertCircle
+  const getStyleForAction = (action: ClinicAction) => {
+    let style = {
+      bg: "bg-gray-50 border-gray-200",
+      iconBg: "bg-gray-100",
+      icon: "text-gray-600",
+      textTitle: "text-gray-900",
+      textDesc: "text-gray-700",
+      btn: "bg-gray-600 hover:bg-gray-500",
+      Icon: Calendar,
+      btnLabel: "RESOLVE"
+    }
+
+    switch (action.type) {
+      case 'START_ENCOUNTER':
+      case 'CONTINUE_ENCOUNTER':
+        style = { ...style, bg: "bg-emerald-50 border-emerald-200", iconBg: "bg-emerald-100", icon: "text-emerald-600", textTitle: "text-emerald-900", textDesc: "text-emerald-700", btn: "bg-emerald-600 hover:bg-emerald-500", Icon: Activity, btnLabel: "OPEN" }
+        break
+      case 'COLLECT_PAYMENT':
+        style = { ...style, bg: "bg-red-50 border-red-200", iconBg: "bg-red-100", icon: "text-red-600", textTitle: "text-red-900", textDesc: "text-red-700", btn: "bg-red-600 hover:bg-red-500", Icon: CreditCard, btnLabel: "COLLECT" }
+        break
+      case 'COMPLETE_NOTES':
+        style = { ...style, bg: "bg-orange-50 border-orange-200", iconBg: "bg-orange-100", icon: "text-orange-600", textTitle: "text-orange-900", textDesc: "text-orange-700", btn: "bg-orange-600 hover:bg-orange-500", Icon: FileText, btnLabel: "WRITE NOTES" }
+        break
+      case 'REVIEW_REFERRAL':
+        style = { ...style, bg: "bg-purple-50 border-purple-200", iconBg: "bg-purple-100", icon: "text-purple-600", textTitle: "text-purple-900", textDesc: "text-purple-700", btn: "bg-purple-600 hover:bg-purple-500", Icon: AlertCircle, btnLabel: "REVIEW" }
+        break
+      case 'SCHEDULE_FOLLOWUP':
+      case 'SET_RECALL':
+        style = { ...style, bg: "bg-amber-50 border-amber-200", iconBg: "bg-amber-100", icon: "text-amber-600", textTitle: "text-amber-900", textDesc: "text-amber-700", btn: "bg-amber-600 hover:bg-amber-500", Icon: Stethoscope, btnLabel: "SCHEDULE" }
+        break
+      default:
+        style = { ...style, bg: "bg-blue-50 border-blue-200", iconBg: "bg-blue-100", icon: "text-blue-600", textTitle: "text-blue-900", textDesc: "text-blue-700", btn: "bg-blue-600 hover:bg-blue-500", Icon: AlertCircle }
+    }
+    return style
   }
 
+  const primaryStyle = getStyleForAction(primaryAction)
+
   return (
-    <div className={`${bgClass} border rounded-lg p-4 flex items-center justify-between`}>
-      <div className="flex items-center gap-3">
-        <div className={`${iconBgClass} p-2 rounded-full`}>
-          <Icon className={`h-5 w-5 ${iconClass}`} />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className={`text-sm font-bold ${textTitleClass}`}>NEXT ACTION: {action.title}</h3>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${iconBgClass} ${iconClass}`}>
-              {action.priority}
-            </span>
+    <div className="space-y-4" role="region" aria-label="Action Center">
+      <div className={`${primaryStyle.bg} border rounded-lg p-4 sm:flex sm:items-center sm:justify-between gap-4`}>
+        <div className="flex items-start sm:items-center gap-3">
+          <div className={`${primaryStyle.iconBg} p-2 rounded-full shrink-0`} aria-hidden="true">
+            <primaryStyle.Icon className={`h-5 w-5 ${primaryStyle.icon}`} />
           </div>
-          <p className={`text-sm ${textDescClass}`}>{action.description}</p>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className={`text-sm font-bold ${primaryStyle.textTitle}`}>NEXT ACTION: {primaryAction.title}</h3>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${primaryStyle.iconBg} ${primaryStyle.icon}`}>
+                <span className="sr-only">Priority: </span>{primaryAction.priority}
+              </span>
+            </div>
+            <p className={`text-sm ${primaryStyle.textDesc} mt-1 sm:mt-0`}>{primaryAction.description}</p>
+          </div>
+        </div>
+        <div className="mt-4 sm:mt-0 shrink-0">
+          <Link 
+            href={primaryAction.actionUrl}
+            className={`inline-flex w-full sm:w-auto justify-center items-center gap-1 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm ${primaryStyle.btn} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
+            aria-label={`Resolve action: ${primaryAction.title}`}
+          >
+            {primaryStyle.btnLabel} <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
-      <Link 
-        href={action.actionUrl}
-        className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm ${btnClass}`}
-      >
-        {btnLabel} <ArrowRight className="h-4 w-4" />
-      </Link>
+
+      {secondaryActions.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">Also Needs Attention</h4>
+          <ul className="space-y-3">
+            {secondaryActions.map(action => {
+              const style = getStyleForAction(action)
+              return (
+                <li key={action.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 hover:bg-gray-50 rounded-md">
+                  <div className="flex items-start gap-2">
+                    <style.Icon className={`h-4 w-4 ${style.icon} mt-0.5 shrink-0`} aria-hidden="true" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-bold ${style.textTitle}`}>{action.title}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${style.iconBg} ${style.icon}`}>
+                          <span className="sr-only">Priority: </span>{action.priority}
+                        </span>
+                      </div>
+                      <span className={`text-xs ${style.textDesc}`}>{action.description}</span>
+                    </div>
+                  </div>
+                  <Link 
+                    href={action.actionUrl}
+                    className={`inline-flex shrink-0 items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-md text-white shadow-sm ${style.btn} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
+                    aria-label={`Resolve secondary action: ${action.title}`}
+                  >
+                    {style.btnLabel}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
