@@ -6,6 +6,10 @@ import Link from 'next/link'
 import { Phone, Clock, ArrowRight, UserPlus, FileText, AlertCircle } from 'lucide-react'
 import { AppointmentStatusButtons } from '@/features/appointments/components/AppointmentStatusButtons'
 
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+export const revalidate = 0
+
 export default async function DashboardPage() {
   const [data, todayActions] = await Promise.all([
     getDashboardData().catch(() => null),
@@ -129,7 +133,7 @@ export default async function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2">
-                          <AppointmentStatusButtons id={apt.id} currentStatus={apt.status} />
+                          <AppointmentStatusButtons id={apt.id} currentStatus={apt.status} updatedAt={apt.updated_at} />
                           <Link href={`/dashboard/patients/${apt.patient_id}`} className="text-xs text-blue-600 font-medium hover:text-blue-500">
                             View File &rarr;
                           </Link>
@@ -164,7 +168,7 @@ export default async function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2">
-                          <AppointmentStatusButtons id={apt.id} currentStatus={apt.status} />
+                          <AppointmentStatusButtons id={apt.id} currentStatus={apt.status} updatedAt={apt.updated_at} />
                         </div>
                       </div>
                     </li>

@@ -5,7 +5,7 @@ import { AppointmentStatus } from '@/lib/types/database.types'
 import { updateAppointmentStatus } from '@/features/appointments/actions/appointmentActions'
 import { CheckCircle2, Play, UserCheck, XCircle } from 'lucide-react'
 
-export function AppointmentStatusButtons({ id, currentStatus }: { id: string, currentStatus: AppointmentStatus }) {
+export function AppointmentStatusButtons({ id, currentStatus, updatedAt }: { id: string, currentStatus: AppointmentStatus, updatedAt?: string }) {
   const [isLoading, setIsLoading] = useState(false)
 
   async function handleStatusChange(status: AppointmentStatus) {
@@ -14,7 +14,10 @@ export function AppointmentStatusButtons({ id, currentStatus }: { id: string, cu
     }
     
     setIsLoading(true)
-    await updateAppointmentStatus(id, status)
+    const result = await updateAppointmentStatus(id, status, updatedAt)
+    if (result?.error) {
+      alert(result.error)
+    }
     setIsLoading(false)
   }
 
@@ -34,8 +37,13 @@ export function AppointmentStatusButtons({ id, currentStatus }: { id: string, cu
         <button
           onClick={async () => {
             setIsLoading(true)
-            await updateAppointmentStatus(id, 'IN_PROGRESS')
-            window.location.href = `/dashboard/appointments/${id}/consultation`
+            const result = await updateAppointmentStatus(id, 'IN_PROGRESS', updatedAt)
+            if (result?.error) {
+              alert(result.error)
+              setIsLoading(false)
+            } else {
+              window.location.href = `/dashboard/appointments/${id}/consultation`
+            }
           }}
           disabled={isLoading}
           className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-sm font-semibold text-purple-800 hover:bg-purple-200"
@@ -63,6 +71,12 @@ export function AppointmentStatusButtons({ id, currentStatus }: { id: string, cu
 
       {(currentStatus === 'SCHEDULED' || currentStatus === 'CONFIRMED' || currentStatus === 'CHECKED_IN') && (
         <>
+          <a
+            href={`/dashboard/appointments/${id}/edit`}
+            className="inline-flex items-center gap-1 rounded bg-blue-100 px-2 py-1 text-sm font-semibold text-blue-800 hover:bg-blue-200"
+          >
+            Edit / Reschedule
+          </a>
           <button
             onClick={() => handleStatusChange('CANCELLED')}
             disabled={isLoading}

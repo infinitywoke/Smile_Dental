@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { adminClient } from './helpers/testDb';
+import * as crypto from 'crypto';
 
 const TENANT_SMILE = '11111111-1111-1111-1111-111111111111';
 
@@ -34,6 +35,7 @@ test.describe('DEF-5.2 Invariant Verification', () => {
       status: 'IN_PROGRESS',
       reason: 'DEF-5.2 Verification',
       booking_source: 'WALK_IN',
+      assigned_specialist: crypto.randomUUID(),
       scheduled_start: start.toISOString(),
       scheduled_end: end.toISOString()
     }).select().single();
@@ -50,7 +52,7 @@ test.describe('DEF-5.2 Invariant Verification', () => {
       .eq('id', apptId);
     
     expect(error).not.toBeNull();
-    expect(error?.message).toContain('Cannot complete an appointment without a clinical record');
+    expect(error?.message).toContain('A COMPLETED appointment must have a corresponding clinical record');
   });
 
   test('D. Valid completion: Succeeds when clinical record is present', async () => {

@@ -82,17 +82,26 @@ export async function createAppointment(formData: FormData) {
   redirect(`/dashboard/appointments/${data.id}`)
 }
 
-export async function updateAppointmentStatus(id: string, status: AppointmentStatus, redirectPath?: string) {
+export async function updateAppointmentStatus(id: string, status: AppointmentStatus, expectedUpdatedAt?: string, redirectPath?: string) {
   const supabase = await createClient()
 
-  const { error } = await supabase
-    .from('appointments')
-    .update({ status })
-    .eq('id', id)
+  let query = supabase.from('appointments').update({ status }).eq('id', id)
+  if (expectedUpdatedAt) {
+    query = query.eq('updated_at', expectedUpdatedAt)
+  }
+
+  const { data, error } = await query.select('id')
 
   if (error) {
+    if (error.code === 'P0001' || error.message.includes('Cannot transition from')) {
+      return { error: 'Cannot revert a completed or cancelled appointment.' }
+    }
     console.error("Failed to update status", error)
     return { error: 'Failed to update status' }
+  }
+
+  if (expectedUpdatedAt && (!data || data.length === 0)) {
+    return { error: 'Appointment was modified by another user. Please refresh.' }
   }
 
   revalidatePath('/dashboard')
@@ -103,7 +112,7 @@ export async function updateAppointmentStatus(id: string, status: AppointmentSta
   }
 }
 
-export async function updateAppointment(id: string, formData: FormData) {
+export async function updateAppointment(id: string, formData: FormData, expectedUpdatedAt?: string) {
   const date = formData.get('date') as string
   const start_time = formData.get('start_time') as string
   const end_time = formData.get('end_time') as string
@@ -125,7 +134,7 @@ export async function updateAppointment(id: string, formData: FormData) {
 
   const supabase = await createClient()
 
-  const { error } = await supabase
+  let query = supabase
     .from('appointments')
     .update({
       scheduled_start,
@@ -137,12 +146,25 @@ export async function updateAppointment(id: string, formData: FormData) {
     })
     .eq('id', id)
 
+  if (expectedUpdatedAt) {
+    query = query.eq('updated_at', expectedUpdatedAt)
+  }
+
+  const { data, error } = await query.select('id')
+
   if (error) {
     if (error.message.includes('overlapping') || error.code === '23P01' || error.message.includes('exclude')) {
       return { error: 'That time is already booked. Please choose another time.' }
     }
+    if (error.code === 'P0001' || error.message.includes('Cannot transition from')) {
+      return { error: 'Invalid appointment state transition.' }
+    }
     console.error("Failed to update appointment", error)
     return { error: 'Failed to update appointment in database.' }
+  }
+
+  if (expectedUpdatedAt && (!data || data.length === 0)) {
+    return { error: 'Appointment was modified by another user. Please refresh.' }
   }
 
   revalidatePath('/dashboard')

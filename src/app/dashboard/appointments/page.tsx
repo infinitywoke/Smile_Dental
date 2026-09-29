@@ -107,7 +107,7 @@ export default async function AppointmentsPage({
 
                 <div className="flex flex-col sm:items-end gap-3 sm:min-w-[200px]">
                   <div>{getStatusBadge(app.status)}</div>
-                  <AppointmentStatusButtons id={app.id} currentStatus={app.status} />
+                  <AppointmentStatusButtons id={app.id} currentStatus={app.status} updatedAt={app.updated_at} />
                 </div>
                 
                 <div className="hidden sm:block">

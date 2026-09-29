@@ -41,6 +41,7 @@ export async function createTestAppointment(options: {
   scheduledStart?: string;
   scheduledEnd?: string;
   updatedAt?: string;
+  assignedSpecialist?: string;
 }) {
   let start = options.scheduledStart;
   let end = options.scheduledEnd;
@@ -49,11 +50,18 @@ export async function createTestAppointment(options: {
     const d = new Date();
     d.setHours(d.getHours() + 1, 0, 0, 0);
     d.setMinutes(apptMinuteOffset);
-    apptMinuteOffset += 40;
+    apptMinuteOffset += 1; // Even 1 minute offset makes them look distinct on screen, but to avoid double booking we use a random specialist
     start = d.toISOString();
     end = new Date(d.getTime() + 30 * 60000).toISOString();
   } else if (!end) {
     end = new Date(new Date(start).getTime() + 30 * 60000).toISOString();
+  }
+
+  // Use a random specialist to bypass the double-booking constraint for generic mock tests, 
+  // unless the test explicitly provided one (or provided null).
+  let specialist = options.assignedSpecialist;
+  if (options.assignedSpecialist === undefined) {
+    specialist = crypto.randomUUID();
   }
 
   const { data, error } = await adminClient
@@ -66,7 +74,8 @@ export async function createTestAppointment(options: {
       scheduled_start: start,
       scheduled_end: end,
       booking_source: 'WALK_IN',
-      updated_at: options.updatedAt || new Date().toISOString()
+      updated_at: options.updatedAt || new Date().toISOString(),
+      assigned_specialist: specialist
     })
     .select('*')
     .single();
@@ -231,5 +240,24 @@ export async function createTestPayment(options: {
 export async function cleanupTestData(patientIds: string[]) {
   if (!patientIds || patientIds.length === 0) return;
   const { error } = await adminClient.rpc('cleanup_test_data', { patient_ids: patientIds });
-  if (error) console.error('cleanupTestData error:', error);
+  if (error) {
+    console.error('cleanupTestData RPC error, falling back to JS:', error.message);
+    await adminClient.from('clinical_records').delete().in('patient_id', patientIds);
+    
+    const { data: plans } = await adminClient.from('treatment_plans').select('id').in('patient_id', patientIds);
+    if (plans && plans.length > 0) {
+      const planIds = plans.map(p => p.id);
+      // Reset status to bypass the prevent_completed_item_delete trigger
+      await adminClient.from('treatment_items').update({ status: 'PLANNED' }).in('treatment_plan_id', planIds);
+      await adminClient.from('treatment_items').delete().in('treatment_plan_id', planIds);
+    }
+    
+    // Also reset appointment status to bypass the appointment terminal state trigger (Phase 6)
+    await adminClient.from('appointments').update({ status: 'SCHEDULED' }).in('patient_id', patientIds);
+    await adminClient.from('treatment_plans').delete().in('patient_id', patientIds);
+    await adminClient.from('specialist_referrals').delete().in('patient_id', patientIds);
+    await adminClient.from('payments').delete().in('patient_id', patientIds);
+    await adminClient.from('appointments').delete().in('patient_id', patientIds);
+    await adminClient.from('patients').delete().in('id', patientIds);
+  }
 }

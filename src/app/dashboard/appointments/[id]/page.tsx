@@ -90,7 +90,7 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
             
             <div className="sm:col-span-2 border-t pt-6 mt-2">
               <h4 className="text-sm font-medium text-gray-900 mb-4">Quick Actions</h4>
-              <AppointmentStatusButtons id={appointment.id} currentStatus={appointment.status} />
+              <AppointmentStatusButtons id={appointment.id} currentStatus={appointment.status} updatedAt={appointment.updated_at} />
             </div>
           </dl>
         </div>

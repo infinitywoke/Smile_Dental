@@ -135,6 +135,7 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
 
       // Verify action disappears on dashboard
       await page.goto('/dashboard');
+      await page.reload();
       await expect(page.locator('section[aria-label="Global Action Center"]')).not.toContainText('Patient-Act3-Notes');
     } finally {
       await cleanupTestData([patient.id]);
@@ -173,6 +174,7 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
 
       // Verify dashboard reflects resolution
       await page.goto('/dashboard');
+      await page.reload();
       await expect(page.locator('section[aria-label="Global Action Center"]')).not.toContainText('Extraction Act4');
     } finally {
       await cleanupTestData([patient.id]);
@@ -212,6 +214,7 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
 
       // Refresh and verify action disappears
       await page.goto('/dashboard');
+      await page.reload();
       await expect(page.locator('section[aria-label="Global Action Center"]')).not.toContainText('Patient-Act5-Followup');
     } finally {
       await cleanupTestData([patient.id]);
@@ -253,6 +256,7 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
 
       // Verify action resolves on dashboard
       await page.goto('/dashboard');
+      await page.reload();
       await expect(page.locator('section[aria-label="Global Action Center"]')).not.toContainText('Patient-Act6-Payment');
     } finally {
       await cleanupTestData([patient.id]);
@@ -280,6 +284,7 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
 
       // Refresh and verify action disappears
       await page.goto('/dashboard');
+      await page.reload();
       await expect(page.locator('section[aria-label="Global Action Center"]')).not.toContainText('Dr. Rao Act7');
     } finally {
       await cleanupTestData([patient.id]);
@@ -311,6 +316,7 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
 
       // Refresh dashboard and verify action is resolved
       await page.goto('/dashboard');
+      await page.reload();
       await expect(page.locator('section[aria-label="Global Action Center"]')).not.toContainText('Prospect-Act8');
     } finally {
       await adminClient.from('booking_requests').delete().eq('id', req.id);
@@ -321,13 +327,14 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
     const patient = await createTestPatient(TENANT_SMILE, 'Patient-Act9-Recall');
     const eightMonthsAgo = new Date();
     eightMonthsAgo.setMonth(eightMonthsAgo.getMonth() - 8);
+    const eightMonthsAgoEnd = new Date(eightMonthsAgo.getTime() + 30 * 60000);
 
     const oldAppt = await createTestAppointment({
       tenantId: TENANT_SMILE,
       patientId: patient.id,
       status: 'COMPLETED',
       scheduledStart: eightMonthsAgo.toISOString(),
-      scheduledEnd: eightMonthsAgo.toISOString(),
+      scheduledEnd: eightMonthsAgoEnd.toISOString(),
       updatedAt: eightMonthsAgo.toISOString()
     });
     // Add clinical record so it does NOT generate COMPLETE_NOTES

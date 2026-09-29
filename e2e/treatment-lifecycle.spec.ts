@@ -44,8 +44,9 @@ test.describe('Phase 5 — COMPLETE_TREATMENT Lifecycle Matrix (Cases A - H)', (
     });
 
     await page.goto('/dashboard');
-    const actionCenter = page.locator('section[aria-label="Global Action Center"]');
-    await expect(actionCenter).toContainText('Treatment Lifecycle Patient');
+      await page.reload();
+      const actionCenter = page.locator('section[aria-label="Global Action Center"]');
+      await expect(actionCenter).toContainText('Treatment Lifecycle Patient');
     await expect(actionCenter).toContainText('Root Canal Therapy A (Tooth #11) is currently in progress.');
 
     // Cleanup item
@@ -72,8 +73,9 @@ test.describe('Phase 5 — COMPLETE_TREATMENT Lifecycle Matrix (Cases A - H)', (
     });
 
     await page.goto('/dashboard');
-    const actionCenter = page.locator('section[aria-label="Global Action Center"]');
-    await expect(actionCenter).toContainText('Crown Prep Tooth 21');
+      await page.reload();
+      const actionCenter = page.locator('section[aria-label="Global Action Center"]');
+      await expect(actionCenter).toContainText('Crown Prep Tooth 21');
     await expect(actionCenter).toContainText('Post and Core Tooth 22');
 
     // Cleanup
@@ -113,7 +115,8 @@ test.describe('Phase 5 — COMPLETE_TREATMENT Lifecycle Matrix (Cases A - H)', (
 
     // Return to dashboard and verify action is gone
     await page.goto('/dashboard');
-    await expect(page.locator('section[aria-label="Global Action Center"]')).not.toContainText('Scaling and Polishing');
+      await page.reload();
+      await expect(page.locator('section[aria-label="Global Action Center"]')).not.toContainText('Scaling and Polishing');
 
     // Cleanup
     await adminClient.from('treatment_plans').delete().eq('id', plan.id);
@@ -137,8 +140,9 @@ test.describe('Phase 5 — COMPLETE_TREATMENT Lifecycle Matrix (Cases A - H)', (
     });
 
     await page.goto('/dashboard');
-    const actionCenter = page.locator('section[aria-label="Global Action Center"]');
-    await expect(actionCenter).not.toContainText('Future Implant (Tooth #14) is currently in progress.');
+      await page.reload();
+      const actionCenter = page.locator('section[aria-label="Global Action Center"]');
+      await expect(actionCenter).not.toContainText('Future Implant (Tooth #14) is currently in progress.');
     await expect(actionCenter).not.toContainText('Cancelled Extraction');
 
     // Cleanup
@@ -169,8 +173,9 @@ test.describe('Phase 5 — COMPLETE_TREATMENT Lifecycle Matrix (Cases A - H)', (
     });
 
     await page.goto('/dashboard');
-    const actionCenter = page.locator('section[aria-label="Global Action Center"]');
-    await expect(actionCenter).toContainText('Plan 1 Item InProgress');
+      await page.reload();
+      const actionCenter = page.locator('section[aria-label="Global Action Center"]');
+      await expect(actionCenter).toContainText('Plan 1 Item InProgress');
     await expect(actionCenter).toContainText('Plan 2 Item InProgress');
 
     // Cleanup
@@ -238,8 +243,9 @@ test.describe('Phase 5 — COMPLETE_TREATMENT Lifecycle Matrix (Cases A - H)', (
 
     // Return to dashboard
     await page.goto('/dashboard');
-    const actionCenter = page.locator('section[aria-label="Global Action Center"]');
-    await expect(actionCenter).not.toContainText('First Procedure To Complete');
+      await page.reload();
+      const actionCenter = page.locator('section[aria-label="Global Action Center"]');
+      await expect(actionCenter).not.toContainText('First Procedure To Complete');
     await expect(actionCenter).toContainText('Second Procedure To Stay');
 
     // Cleanup
@@ -260,8 +266,9 @@ test.describe('Phase 5 — COMPLETE_TREATMENT Lifecycle Matrix (Cases A - H)', (
 
     // In DB, item is already completed.
     await page.goto('/dashboard');
-    const actionCenter = page.locator('section[aria-label="Global Action Center"]');
-    await expect(actionCenter).not.toContainText('Already Completed Item');
+      await page.reload();
+      const actionCenter = page.locator('section[aria-label="Global Action Center"]');
+      await expect(actionCenter).not.toContainText('Already Completed Item');
 
     // Go to patient page, verify item shows line-through / completed
     await page.goto(`/dashboard/patients/${patientMain.id}#treatments`);

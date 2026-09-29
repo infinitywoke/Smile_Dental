@@ -40,7 +40,7 @@ export function AppointmentForm({
 
     let result
     if (appointmentId) {
-      result = await updateAppointment(appointmentId, formData)
+      result = await updateAppointment(appointmentId, formData, (initialData as any)?.updated_at)
     } else {
       result = await createAppointment(formData)
     }
