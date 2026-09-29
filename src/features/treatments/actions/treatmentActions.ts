@@ -31,6 +31,7 @@ export async function createTreatmentPlan(patientId: string, name: string, notes
   if (error) return { error: error.message }
 
   revalidatePath(`/dashboard/patients/${patientId}`)
+  revalidatePath('/dashboard')
   return { data }
 }
 
@@ -45,6 +46,7 @@ export async function updateTreatmentPlanStatus(planId: string, status: Treatmen
   if (error) return { error: error.message }
 
   revalidatePath(`/dashboard/patients/${patientId}`)
+  revalidatePath('/dashboard')
   return { success: true }
 }
 
@@ -75,12 +77,13 @@ export async function createTreatmentItem(
   if (error) return { error: error.message }
 
   revalidatePath(`/dashboard/patients/${patientId}`)
+  revalidatePath('/dashboard')
   return { data }
 }
 
 export async function updateTreatmentItemStatus(
   itemId: string, 
-  planId: string,
+  planId: string, 
   patientId: string, 
   status: TreatmentStatus
 ) {
@@ -98,6 +101,7 @@ export async function updateTreatmentItemStatus(
   if (error) return { error: error.message }
 
   revalidatePath(`/dashboard/patients/${patientId}`)
+  revalidatePath('/dashboard')
   return { success: true }
 }
 
@@ -114,5 +118,6 @@ export async function deleteTreatmentItem(itemId: string, planId: string, patien
   if (error) return { error: error.message }
 
   revalidatePath(`/dashboard/patients/${patientId}`)
+  revalidatePath('/dashboard')
   return { success: true }
 }

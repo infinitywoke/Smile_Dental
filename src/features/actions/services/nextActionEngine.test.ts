@@ -47,22 +47,26 @@ describe('NextActionEngine - Deterministic Rules Audit', () => {
 
   // --- 3. COMPLETE_NOTES ---
   describe('COMPLETE_NOTES', () => {
-    it('Positive: Generated for COMPLETED appointments missing notes', () => {
+    it('Positive: Generated for past IN_PROGRESS appointments', () => {
+      const pastDate = new Date()
+      pastDate.setDate(pastDate.getDate() - 1)
       const actions = computePatientActions(
         patientId, patientName,
-        [{ id: 'a1', status: 'COMPLETED', updated_at: new Date().toISOString() }],
+        [{ id: 'a1', status: 'IN_PROGRESS', scheduled_start: pastDate.toISOString(), updated_at: new Date().toISOString() }],
         [], false, 0, [], [], null
       )
       expect(actions.find(a => a.type === 'COMPLETE_NOTES')).toBeDefined()
     })
 
-    it('Negative: Suppressed once clinical record exists', () => {
+    it('Negative: Not generated for today IN_PROGRESS appointments', () => {
+      const todayDate = new Date()
       const actions = computePatientActions(
         patientId, patientName,
-        [{ id: 'a1', status: 'COMPLETED', updated_at: new Date().toISOString() }],
-        [], false, 0, [], [{ appointment_id: 'a1' }], null
+        [{ id: 'a1', status: 'IN_PROGRESS', scheduled_start: todayDate.toISOString(), updated_at: new Date().toISOString() }],
+        [], false, 0, [], [], null
       )
       expect(actions.find(a => a.type === 'COMPLETE_NOTES')).toBeUndefined()
+      expect(actions.find(a => a.type === 'CONTINUE_ENCOUNTER')).toBeDefined()
     })
   })
 
@@ -142,6 +146,93 @@ describe('NextActionEngine - Deterministic Rules Audit', () => {
         ], [], null
       )
       expect(actions.find(a => a.type === 'REVIEW_REFERRAL')).toBeUndefined()
+    })
+  })
+
+  // --- 5.5 COMPLETE_TREATMENT ---
+  describe('COMPLETE_TREATMENT', () => {
+    it('Negative: no treatment -> no action', () => {
+      const actions = computePatientActions(patientId, patientName, [], [], false, 0, [], [], null)
+      expect(actions.find(a => a.type === 'COMPLETE_TREATMENT')).toBeUndefined()
+    })
+
+    it('Positive: incomplete actionable treatment -> action', () => {
+      const plans = [{
+        id: 'p1', name: 'Plan', status: 'ACTIVE', created_at: new Date().toISOString(),
+        treatment_items: [{ id: 'i1', status: 'IN_PROGRESS', procedure: 'Filling', tooth_number: '14' }]
+      }]
+      const actions = computePatientActions(patientId, patientName, [], plans, false, 0, [], [], null)
+      const action = actions.find(a => a.type === 'COMPLETE_TREATMENT')
+      expect(action).toBeDefined()
+      expect(action?.priority).toBe('HIGH')
+      expect(action?.patientId).toBe(patientId)
+      expect(action?.patientName).toBe(patientName)
+      expect(action?.treatmentPlanId).toBe('p1')
+      expect(action?.treatmentItemId).toBe('i1')
+      expect(action?.tooth).toBe('14')
+      expect(action?.reason).toBe('Filling')
+      expect(action?.description).toBe('Filling (Tooth #14) is currently in progress.')
+      expect(action?.actionUrl).toBe(`/dashboard/patients/${patientId}#treatments`)
+    })
+
+    it('Negative: completed or cancelled treatment -> no action', () => {
+      const plans = [{
+        id: 'p1', name: 'Plan', status: 'ACTIVE',
+        treatment_items: [
+          { id: 'i1', status: 'COMPLETED', procedure: 'Filling' },
+          { id: 'i2', status: 'CANCELLED', procedure: 'Extraction' },
+          { id: 'i3', status: 'PLANNED', procedure: 'Crown' }
+        ]
+      }]
+      const actions = computePatientActions(patientId, patientName, [], plans, false, 0, [], [], null)
+      expect(actions.find(a => a.type === 'COMPLETE_TREATMENT')).toBeUndefined()
+    })
+
+    it('Multiple items: one completed + one incomplete', () => {
+      const plans = [{
+        id: 'p1', name: 'Plan', status: 'ACTIVE',
+        treatment_items: [
+          { id: 'i1', status: 'COMPLETED', procedure: 'Filling' },
+          { id: 'i2', status: 'IN_PROGRESS', procedure: 'Extraction', tooth_number: '8' }
+        ]
+      }]
+      const actions = computePatientActions(patientId, patientName, [], plans, false, 0, [], [], null)
+      const treatActions = actions.filter(a => a.type === 'COMPLETE_TREATMENT')
+      expect(treatActions.length).toBe(1)
+      expect(treatActions[0].treatmentItemId).toBe('i2')
+    })
+
+    it('Multiple items: multiple incomplete items', () => {
+      const plans = [{
+        id: 'p1', name: 'Plan', status: 'ACTIVE',
+        treatment_items: [
+          { id: 'i1', status: 'IN_PROGRESS', procedure: 'Filling', tooth_number: '14' },
+          { id: 'i2', status: 'IN_PROGRESS', procedure: 'Extraction', tooth_number: '8' }
+        ]
+      }]
+      const actions = computePatientActions(patientId, patientName, [], plans, false, 0, [], [], null)
+      const treatActions = actions.filter(a => a.type === 'COMPLETE_TREATMENT')
+      expect(treatActions.length).toBe(2)
+      expect(treatActions[0].treatmentItemId).toBe('i1')
+      expect(treatActions[1].treatmentItemId).toBe('i2')
+    })
+
+    it('Multiple plans: one active, one completed', () => {
+      const plans = [
+        {
+          id: 'p1', name: 'Completed Plan', status: 'COMPLETED',
+          treatment_items: [{ id: 'i1', status: 'IN_PROGRESS', procedure: 'Filling' }] // Should not happen IRL but testing filter
+        },
+        {
+          id: 'p2', name: 'Active Plan', status: 'ACTIVE',
+          treatment_items: [{ id: 'i2', status: 'IN_PROGRESS', procedure: 'Crown' }]
+        }
+      ]
+      const actions = computePatientActions(patientId, patientName, [], plans, false, 0, [], [], null)
+      const treatActions = actions.filter(a => a.type === 'COMPLETE_TREATMENT')
+      expect(treatActions.length).toBe(1)
+      expect(treatActions[0].treatmentPlanId).toBe('p2')
+      expect(treatActions[0].treatmentItemId).toBe('i2')
     })
   })
 

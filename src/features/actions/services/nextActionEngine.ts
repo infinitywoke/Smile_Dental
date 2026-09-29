@@ -29,7 +29,15 @@ export function computePatientActions(
   // 1. IN CHAIR / WAITING (NOW)
   if (appointments) {
     for (const apt of appointments) {
-      if (apt.status === 'IN_PROGRESS') {
+      let isPast = false
+      if (apt.scheduled_start) {
+        const aptDate = new Date(apt.scheduled_start)
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+        isPast = aptDate < todayStart
+      }
+
+      if (apt.status === 'IN_PROGRESS' && !isPast) {
         // Calculate elapsed time if available
         let elapsedStr = ''
         if (apt.updated_at) {
@@ -95,9 +103,17 @@ export function computePatientActions(
 
   // 3. CLINICAL: COMPLETE NOTES
   if (appointments && clinicalRecords) {
-    const notedAptIds = new Set(clinicalRecords.map(n => n.appointment_id))
+    const notedAptIds = new Set(clinicalRecords.map((n: any) => n.appointment_id))
     for (const apt of appointments) {
-      if (apt.status === 'COMPLETED' && !notedAptIds.has(apt.id)) {
+      let isPast = false
+      if (apt.scheduled_start) {
+        const aptDate = new Date(apt.scheduled_start)
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+        isPast = aptDate < todayStart
+      }
+
+      if (apt.status === 'IN_PROGRESS' && isPast && !notedAptIds.has(apt.id)) {
         const dateStr = apt.scheduled_start ? new Date(apt.scheduled_start).toLocaleDateString() : 'recent'
         actions.push({
           id: `notes_${apt.id}`,
@@ -108,7 +124,7 @@ export function computePatientActions(
           category: 'CLINICAL',
           priority: 'HIGH',
           title: 'Missing Clinical Note',
-          description: apt.reason ? `Requires documentation for ${dateStr} visit (${apt.reason}).` : `Completed appointment on ${dateStr} lacks required documentation.`,
+          description: apt.reason ? `Requires documentation for past visit (${apt.reason}).` : `Past appointment on ${dateStr} lacks required documentation.`,
           actionUrl: `/dashboard/appointments/${apt.id}/consultation?action=complete_notes`,
           timestamp: apt.updated_at,
           appointmentId: apt.id,
@@ -185,7 +201,37 @@ export function computePatientActions(
     }
   }
 
-  // 6. SCHEDULING: SET RECALL (Routine Checkup)
+  // 6. CLINICAL: COMPLETE TREATMENT (IN_PROGRESS items)
+  if (treatmentPlans) {
+    const activePlans = treatmentPlans.filter((p: any) => p.status === 'ACTIVE')
+    for (const plan of activePlans) {
+      if (plan.treatment_items) {
+        const inProgressItems = plan.treatment_items.filter((i: any) => i.status === 'IN_PROGRESS')
+        for (const item of inProgressItems) {
+          const toothStr = item.tooth_number ? " (Tooth #" + item.tooth_number + ")" : ""
+          actions.push({
+            id: "treat_" + item.id,
+            patientId,
+            patientName,
+            type: 'COMPLETE_TREATMENT',
+            source: 'TREATMENT',
+            category: 'CLINICAL',
+            priority: 'HIGH',
+            title: 'Complete Treatment',
+            description: item.procedure + toothStr + " is currently in progress.",
+            actionUrl: "/dashboard/patients/" + patientId + "#treatments",
+            timestamp: plan.created_at || new Date().toISOString(),
+            treatmentPlanId: plan.id,
+            treatmentItemId: item.id,
+            tooth: item.tooth_number,
+            reason: item.procedure
+          })
+        }
+      }
+    }
+  }
+
+  // 7. SCHEDULING: SET RECALL (Routine Checkup)
   // Only trigger if no active plans, no future appointments, and > 6 months since last completed
   if (!hasUpcomingAppointment && (!treatmentPlans || treatmentPlans.filter(p => p.status === 'ACTIVE').length === 0)) {
     if (lastCompletedDate) {
@@ -285,7 +331,7 @@ export async function getClinicWideActions(): Promise<ClinicAction[]> {
   let actions: ClinicAction[] = []
 
   // 1. Web Booking Requests
-  const { data: bookings } = await supabase.from('booking_requests').select('id, name, phone, reason, created_at').eq('status', 'PENDING')
+  const { data: bookings } = await supabase.from('booking_requests').select('id, name, phone, reason, created_at').eq('status', 'NEW')
   if (bookings) {
     for (const req of bookings) {
       actions.push({
@@ -306,17 +352,20 @@ export async function getClinicWideActions(): Promise<ClinicAction[]> {
     }
   }
 
-  // A. Missing Notes (Completed appts in the last 7 days without a clinical record)
-  const sevenDaysAgo = new Date()
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-  const [recentApts, recentNotes] = await Promise.all([
-    supabase.from('appointments').select('id, patient_id, updated_at, reason, scheduled_start, patients(name)').eq('status', 'COMPLETED').gt('updated_at', sevenDaysAgo.toISOString()),
-    supabase.from('clinical_records').select('appointment_id').gt('created_at', sevenDaysAgo.toISOString())
+  // A. Missing Notes (IN_PROGRESS appts from past days without clinical records)
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  
+  const [aptsRes, notesRes] = await Promise.all([
+    supabase.from('appointments').select('id, patient_id, updated_at, reason, scheduled_start, patients(name)')
+      .eq('status', 'IN_PROGRESS')
+      .lt('scheduled_start', todayStart.toISOString()),
+    supabase.from('clinical_records').select('appointment_id')
   ])
 
-  if (recentApts.data && recentNotes.data) {
-    const notedAptIds = new Set(recentNotes.data.map(n => n.appointment_id))
-    for (const apt of recentApts.data) {
+  if (aptsRes.data && notesRes.data) {
+    const notedAptIds = new Set(notesRes.data.map(n => n.appointment_id))
+    for (const apt of aptsRes.data) {
       if (!notedAptIds.has(apt.id)) {
         const dateStr = apt.scheduled_start ? new Date(apt.scheduled_start).toLocaleDateString() : 'recent'
         actions.push({
@@ -328,7 +377,7 @@ export async function getClinicWideActions(): Promise<ClinicAction[]> {
           category: 'CLINICAL',
           priority: 'HIGH',
           title: 'Missing Clinical Note',
-          description: apt.reason ? `Requires documentation for ${dateStr} visit (${apt.reason}).` : `Completed appointment on ${dateStr} lacks required documentation.`,
+          description: apt.reason ? `Requires documentation for past visit (${apt.reason}).` : `Past appointment on ${dateStr} lacks required documentation.`,
           actionUrl: `/dashboard/appointments/${apt.id}/consultation?action=complete_notes`,
           timestamp: apt.updated_at,
           appointmentId: apt.id,
@@ -382,6 +431,30 @@ export async function getClinicWideActions(): Promise<ClinicAction[]> {
     const handledPatients = new Set<string>()
 
     for (const plan of activePlans) {
+      if (plan.treatment_items) {
+        const inProgressItems = (plan.treatment_items as any[]).filter((i: any) => i.status === 'IN_PROGRESS')
+        for (const item of inProgressItems) {
+          const toothStr = item.tooth_number ? " (Tooth #" + item.tooth_number + ")" : ""
+          actions.push({
+            id: "treat_" + item.id,
+            patientId: plan.patient_id,
+            patientName: (plan.patients as any)?.name || 'Unknown',
+            type: 'COMPLETE_TREATMENT',
+            source: 'TREATMENT',
+            category: 'CLINICAL',
+            priority: 'HIGH',
+            title: 'Complete Treatment',
+            description: item.procedure + toothStr + " is currently in progress.",
+            actionUrl: "/dashboard/patients/" + plan.patient_id + "#treatments",
+            timestamp: plan.created_at,
+            treatmentPlanId: plan.id,
+            treatmentItemId: item.id,
+            tooth: item.tooth_number,
+            reason: item.procedure
+          })
+        }
+      }
+
       if (!hasUpcoming.has(plan.patient_id) && !handledPatients.has(plan.patient_id)) {
         handledPatients.add(plan.patient_id)
         

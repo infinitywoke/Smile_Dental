@@ -59,11 +59,16 @@ export default function SmartCheckoutModal({ appointmentId, patientId, onClose, 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
         <div className="px-4 py-3 border-b flex justify-between items-center bg-gray-50">
-          <h3 className="text-lg font-semibold text-gray-900">Complete & Checkout</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+          <h3 id="modal-title" className="text-lg font-semibold text-gray-900">Complete & Checkout</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-500" aria-label="Close dialog">
             <X className="h-5 w-5" />
           </button>
         </div>

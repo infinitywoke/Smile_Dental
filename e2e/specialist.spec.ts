@@ -24,8 +24,8 @@ test.describe('Specialist Referral Workflow & Integration', () => {
       await page.fill('input[name="name"]', name);
       await page.fill('input[name="phone"]', phone);
       await page.click('button:has-text("Save Patient")');
-      await page.waitForURL(/.*dashboard\/patients\/[0-9a-fA-F\-]{36}/);
-      return page.url().split('/').pop()!;
+      await page.waitForURL(/.*dashboard\/appointments\/new\?patientId=[0-9a-fA-F\-]{36}/, { timeout: 15000 });
+      return new URL(page.url()).searchParams.get('patientId')!;
     };
 
     const patientAId = await createPatient('Specialist Patient A', '5550001000');

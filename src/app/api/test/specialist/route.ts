@@ -5,6 +5,11 @@ import { createAppointment } from '@/features/appointments/actions/appointmentAc
 import { createSpecialistReferral } from '@/features/treatments/actions/specialistReferralActions';
 
 export async function POST(req: NextRequest) {
+  // Reject execution in production unless explicitly enabled via internal test flag
+  if (process.env.VERCEL_ENV === 'production' || (process.env.NODE_ENV === 'production' && process.env.ENABLE_TEST_ROUTES !== 'true')) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

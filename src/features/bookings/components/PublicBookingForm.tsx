@@ -75,6 +75,7 @@ export function PublicBookingForm() {
       const urlParams = new URLSearchParams(window.location.search)
       const reasonParam = urlParams.get('reason')
       if (reasonParam) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setData(prev => ({ ...prev, reason: reasonParam }))
       }
     }

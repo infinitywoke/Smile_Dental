@@ -54,6 +54,9 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
         return data?.status;
       }, { timeout: 10000 }).toBe('IN_PROGRESS');
 
+      // 4.5 Wait for the redirect to Clinical Hub to finish
+      await page.waitForURL(/\/dashboard\/appointments\/.*\/consultation/);
+
       // 5. Verify Action resolves: Waiting room no longer has this patient, now in "Now / In Chair"
       await page.goto('/dashboard');
       await expect(page.locator('section', { hasText: 'Waiting Room' })).not.toContainText('Patient-Act1-StartVisit');
@@ -88,16 +91,25 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
     }
   });
 
-  test('3. COMPLETE_NOTES: Completed appointment without notes -> Consultation -> Save notes -> Action disappears', async ({ page }) => {
+  test('3. COMPLETE_NOTES: Past IN_PROGRESS appointment -> Consultation -> Save notes -> Action disappears', async ({ page }) => {
     const patient = await createTestPatient(TENANT_SMILE, 'Patient-Act3-Notes');
+    
+    // Create an appointment from yesterday
+    const pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - 1);
+    
     const appt = await createTestAppointment({
       tenantId: TENANT_SMILE,
       patientId: patient.id,
-      status: 'COMPLETED',
-      reason: 'Cleaning Done Act3'
+      status: 'IN_PROGRESS',
+      reason: 'Cleaning Done Act3',
+      scheduledStart: pastDate.toISOString()
     });
 
     try {
+      const dbApt = await adminClient.from('appointments').select('*').eq('id', appt.id).single();
+      console.log('Test 3 DB Apt:', dbApt.data);
+      console.log('TodayStart in JS:', new Date(new Date().setHours(0,0,0,0)).toISOString());
       await page.goto('/dashboard');
       const actionCenter = page.locator('section[aria-label="Global Action Center"]');
       await expect(actionCenter).toContainText('Patient-Act3-Notes');
@@ -107,7 +119,7 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
       await actionCenter.locator(`a[href*="${appt.id}"]`).first().click();
       await page.waitForURL(new RegExp(`.*dashboard/appointments/${appt.id}/consultation.*`));
 
-      // Fill notes & save consultation
+      // Fill notes & save draft
       await page.locator('#chief_complaint').fill('Patient notes recorded for Act3');
       await page.click('button:has-text("Save Draft")');
 
@@ -116,6 +128,10 @@ test.describe('Phase 5 — Complete Action Center 9-Action E2E Matrix', () => {
         const { data } = await adminClient.from('clinical_records').select('id').eq('appointment_id', appt.id);
         return data?.length;
       }, { timeout: 10000 }).toBeGreaterThan(0);
+
+      // Now complete the appointment to clear the action
+      await page.click('button:has-text("Complete & Checkout")');
+      await page.waitForURL(new RegExp(`.*dashboard/appointments/${appt.id}.*`));
 
       // Verify action disappears on dashboard
       await page.goto('/dashboard');

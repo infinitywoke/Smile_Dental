@@ -43,6 +43,7 @@ export async function saveConsultationAction(formData: FormData) {
 
   revalidatePath(`/dashboard/appointments/${appointmentId}`)
   revalidatePath(`/dashboard/appointments/${appointmentId}/consultation`)
+  revalidatePath('/dashboard')
   
   return { success: true, recordId: data }
 }

@@ -40,6 +40,7 @@ export async function createSpecialistReferral(formData: FormData) {
   if (error) return { error: error.message }
   
   revalidatePath(`/dashboard/patients/${patient_id}`)
+  revalidatePath('/dashboard')
   return { success: true }
 }
 

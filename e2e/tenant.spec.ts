@@ -21,8 +21,8 @@ test.describe('Phase 15.2 Final Verification - Tenant Isolation', () => {
     await page.fill('input[name="name"]', 'Tenant One Patient');
     await page.fill('input[name="phone"]', '1111111111');
     await page.click('button:has-text("Save Patient")');
-    await page.waitForURL(/.*dashboard\/patients\/[0-9a-fA-F\-]{36}/);
-    const p1Id = page.url().split('/').pop()!;
+    await page.waitForURL(/.*dashboard\/appointments\/new\?patientId=[0-9a-fA-F\-]{36}/, { timeout: 15000 });
+    const p1Id = new URL(page.url()).searchParams.get('patientId')!;
     
     // Create a referral in Tenant 1
     const resRef = await apiReq('createSpecialistReferral', {

@@ -97,5 +97,6 @@ export async function recordPayment(
   }
 
   revalidatePath(`/dashboard/patients/${patientId}`)
+  revalidatePath('/dashboard')
   return { data, success: true }
 }

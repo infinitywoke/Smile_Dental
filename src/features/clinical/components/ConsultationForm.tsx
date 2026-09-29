@@ -36,7 +36,7 @@ export default function ConsultationForm({ appointment, existingRecord, activePl
     })) || []
   )
 
-  const isCompleted = appointment.status === 'COMPLETED'
+  const isCompleted = appointment.status === 'COMPLETED' && !!existingRecord
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
