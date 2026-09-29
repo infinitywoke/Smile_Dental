@@ -70,23 +70,24 @@ test.describe('Phase 5 — Runtime Accessibility Suite', () => {
   });
 
   test('F3: Interactive controls have accessible roles and focus indicators', async ({ page }) => {
-    await page.goto('/dashboard');
-    
+    // Wait for deterministic state from beforeEach
+    const newAptBtn = page.locator('a[href="/dashboard/appointments/new"]').first();
+    await expect(newAptBtn).toBeVisible();
+
     // Tab multiple times to verify keyboard traversal order
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    
+
     const activeEl = await page.evaluate(() => document.activeElement?.tagName);
     expect(activeEl).toBeTruthy();
     expect(activeEl !== 'BODY').toBeTruthy();
 
     // Verify dialog semantics on actual interaction
     // Click "New Appointment" or any button that opens a dialog
-    const newAptBtn = page.locator('a[href="/dashboard/appointments/new"]').first();
     await newAptBtn.focus();
     await expect(newAptBtn).toBeFocused();
     await page.keyboard.press('Enter');
     await page.waitForURL('/dashboard/appointments/new');
   });
 });
+
